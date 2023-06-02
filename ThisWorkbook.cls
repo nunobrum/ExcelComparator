@@ -49,8 +49,8 @@ Private Sub Workbook_Open()
     Sheet2.InitVars
     'Call fillLanguagesCombo
     Call InitConfigStrings
-    Application.Width = 1040
-    Application.Height = 650
+    ' Application.Width = 1040
+    ' Application.Height = 650
 End Sub
 
 Private Sub Workbook_Activate()

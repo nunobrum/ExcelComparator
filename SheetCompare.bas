@@ -785,7 +785,7 @@ Sub Compare_Excel_Files_WorkSheets()
     passedCount = 0 ' Initializes with a zero count
     
     
-    Dim iCol As Long, iCol1 As Long
+    Dim iCol As Long, iCol1, oCol1, rCol1 As Long
     Dim Ori_Data As String, Rev_Data As String
     Dim tempWidth As Integer
     
@@ -1134,14 +1134,14 @@ TRY_NEXT:
                     If formatRow And bRowChanged = False Then
                         bRowChanged = True ' Assures that this is only done once
                         If AnnotationSheet = 1 Then ' Original
-                            If oRow > 0 Then
+                            If oRow <> -1 Then
                                 For iCol1 = 0 To iCol_Count - 1
                                     If bHasHeaders Then ' Will index the list of columns to compare
-                                        oCol = oCols(iCol1)
+                                        oCol1 = oCols(iCol1)
                                     Else ' Otherwise it scans sequentialy begining on
-                                        oCol = iCol1 + Ori_iCol_Start
+                                        oCol1 = iCol1 + Ori_iCol_Start
                                     End If
-                                    With Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol)
+                                    With Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol1)
                                         .Interior.Pattern = ChangedRowFormat.Interior.Pattern
                                         .Interior.PatternColorIndex = ChangedRowFormat.Interior.PatternColorIndex
                                         .Interior.Color = ChangedRowFormat.Interior.Color
@@ -1151,14 +1151,14 @@ TRY_NEXT:
                                 Next iCol1
                             End If
                         Else ' Revision
-                            If rRow > 0 Then
+                            If rRow <> -1 Then
                                 For iCol1 = 0 To iCol_Count - 1
                                     If bHasHeaders Then ' Will index the list of columns to compare
-                                        rCol = rCols(iCol1)
+                                        rCol1 = rCols(iCol1)
                                     Else ' Otherwise it scans sequentialy begining on
-                                        rCol = iCol1 + Rev_iCol_Start
+                                        rCol1 = iCol1 + Rev_iCol_Start
                                     End If
-                                    With Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol)
+                                    With Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol1)
                                         .Interior.Pattern = ChangedRowFormat.Interior.Pattern
                                         .Interior.PatternColorIndex = ChangedRowFormat.Interior.PatternColorIndex
                                         .Interior.Color = ChangedRowFormat.Interior.Color
