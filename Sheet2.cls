@@ -138,9 +138,9 @@ End Sub
 
 
 
-Sub ReverseColors(Target As Range)
+Sub ReverseColors(target As Range)
     Dim color_temp As Double
-    With Target
+    With target
         color_temp = .Font.Color
         .Font.Color = .Interior.Color
         .Interior.Color = color_temp
@@ -250,37 +250,37 @@ Private Sub Worksheet_Activate()
     'Call SetGlobals
 End Sub
 
-Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
-    If Target.Row <= logRowHeader Then
+Private Sub Worksheet_BeforeDoubleClick(ByVal target As Range, Cancel As Boolean)
+    If target.Row <= logRowHeader Then
         Exit Sub
     End If
     Call ReReverse ' In any case reverse any previous highlights
         
-    If Target.Column = logColSyncOriValue Then
-        Call SetOriCell(Target.Row)
+    If target.Column = logColSyncOriValue Then
+        Call SetOriCell(target.Row)
         Call BringToFrontOriCell
         Ori_Cell.Select
     Else
-        If Target.Column = logColSyncRevValue Then
-            Call SetRevCell(Target.Row)
+        If target.Column = logColSyncRevValue Then
+            Call SetRevCell(target.Row)
             Call BringToFrontRevCell
             Rev_Cell.Select
         End If
     End If
 End Sub
 
-Private Sub Worksheet_Change(ByVal Target As Range)
+Private Sub Worksheet_Change(ByVal target As Range)
     Dim sheetname As String
     Dim aux As String
     Dim TRow, Row, col As Long
-    Dim Sheet As Worksheet
+    Dim sheet As Worksheet
     Dim TCell As Range
       
     If bAllowUpdates And _
        ThisWorkbook.Sheets("Diff").Cells(logRowOptions, logColUpdateSheets + 1) = "YES" Then
-        If Target.Row > logRowHeaders Then
+        If target.Row > logRowHeaders Then
         ' Cycle through all the cells
-            For Each TCell In Target
+            For Each TCell In target
                 If TCell.Column = logColSyncOriValue Then
                     Call SetOriCell(TCell.Row)
                     If Not Ori_Cell Is Nothing Then
@@ -306,16 +306,16 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     End If
 End Sub
 
-Private Sub Worksheet_SelectionChange(ByVal Target As Range)
+Private Sub Worksheet_SelectionChange(ByVal target As Range)
     
     Call ReReverse ' In any case reverse any previous highlights
-    If Target.Row <= logRowHeader Then
+    If target.Row <= logRowHeader Then
         Exit Sub
     End If
         
     If ThisWorkbook.Sheets("Diff").Cells(logRowOptions, logColSyncNavigation + 1) = "YES" Then
-        Call SetOriCell(Target.Row)
-        Call SetRevCell(Target.Row)
+        Call SetOriCell(target.Row)
+        Call SetRevCell(target.Row)
             
         'If Target.Column = logColSyncOriValue Then
             Call BringToFrontOriCell

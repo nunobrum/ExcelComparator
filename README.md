@@ -1,6 +1,13 @@
 # ExcelComparator
 VBA macros that compare difference between Excel Worksheet comparators
 
+Version 1.9a (02 December 2018)
+Fixes on the annotations with sheet headers are selected
+Allowing the comparison of All sheets with a primary key.
+
+Version 1.9 (13 October 2018)
+Comparing Formulas will also compare texts.
+
 Version 1.8a (24 January 2018)
 Fixing problem when opening for the first time.
 

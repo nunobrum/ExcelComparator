@@ -313,19 +313,19 @@ End Function
 
 
 Sub Reload_Sheets(wbk As Workbook, cell As Range)
-    Dim Sheet As Variant
+    Dim sheet As Variant
     Dim list As String
     Dim MATCHED As Boolean
     
     list = ""
     MATCHED = False
-    For Each Sheet In wbk.Worksheets
+    For Each sheet In wbk.Worksheets
         If Len(list) = 0 Then
-            list = Sheet.Name
+            list = sheet.Name
         Else
-            list = list + "," + Sheet.Name
+            list = list + "," + sheet.Name
         End If
-        If StrComp(cell.Text, Sheet.Name, vbTextCompare) = 0 Then
+        If StrComp(cell.Text, sheet.Name, vbTextCompare) = 0 Then
             MATCHED = True
         End If
     Next
@@ -342,11 +342,11 @@ Sub Reload_Sheets(wbk As Workbook, cell As Range)
         Else
             'This is shit, but it didn't work any other way
             ' wbk.WorkSheets("Config").Name always gave an error
-            For Each Sheet In wbk.Worksheets
-                list = Sheet.Name
+            For Each sheet In wbk.Worksheets
+                list = sheet.Name
                 Exit For
             Next
-            list = Sheet.Name
+            list = sheet.Name
             cell.Value = list
         End If
     End If
@@ -388,27 +388,27 @@ Function DetectHeaderRow(col As Integer) As Long
     End If
 End Function
 
-Function FindPrimaryKey(col As Integer) As Long
+Function FindPrimaryKey(sheet As Worksheet, col As Integer) As Long
+' This function is used to retrieve the primary key colum. Returns 0 if fails
     Dim rng As Range
     Dim headerRow As Long
     Dim Key As String
     Dim cell As Range
-
-    Set rng = TargetSheetRange(col)
     
-    If Not rng Is Nothing Then
-        headerRow = Int(ThisWorkbook.Sheets("Config").Cells(cfgRowHeaderRow, col).Value)
-        Key = ThisWorkbook.Sheets("Config").Cells(cfgRowPrimKeyCol, col).Text
-        
-        For Each cell In rng.Worksheet.Rows(headerRow).Cells()
-            If Not IsEmpty(cell) And cell.Text = Key Then
-                FindPrimaryKey = cell.Column
-                Exit Function
-            End If
-        Next cell
-    Else
-        FindPrimaryKey = 0
-    End If
+    FindPrimaryKey = 0
+    On Error GoTo FindPrimaryKeyEnd
+
+    headerRow = Int(ThisWorkbook.Sheets("Config").Cells(cfgRowHeaderRow, col).Value)
+    Key = ThisWorkbook.Sheets("Config").Cells(cfgRowPrimKeyCol, col).Text
+    
+    For Each cell In sheet.Rows(headerRow).Cells()
+        If Not IsEmpty(cell) And cell.Text = Key Then
+            FindPrimaryKey = cell.Column
+            Exit Function
+        End If
+    Next cell
+    
+FindPrimaryKeyEnd:
 End Function
 
 Sub ReloadColumnNames(col As Integer)
@@ -558,9 +558,9 @@ Sub Open_RevisionWorkbook()
 End Sub
 
 Function IsInWorkbook(sheetToBeFound As String, wbk As Workbook) As Boolean
-    Dim Sheet As Variant
-    For Each Sheet In wbk.Worksheets
-        If sheetToBeFound = Sheet.Name Then
+    Dim sheet As Variant
+    For Each sheet In wbk.Worksheets
+        If sheetToBeFound = sheet.Name Then
             IsInWorkbook = True
             Exit Function
         End If
@@ -655,7 +655,7 @@ Sub Compare_Excel_Files_WorkSheets()
     Dim bMakeAnnotation As Boolean, bPrimaryKey As Boolean
     Dim oPrimaryKeyCol, rPrimaryKeyCol As Long
 
-    Dim AnnotationSheet As Worksheet, Annotation_Row_Start As Integer, Annotation_Col_Start As Integer
+    Dim AnnotationSheet As Integer
     Dim bApplyChangeFormat As Boolean, bInsertComment As Boolean
     Dim ChangedCellFormat As Range
     Dim targetCell As Range
@@ -739,7 +739,10 @@ Sub Compare_Excel_Files_WorkSheets()
     Log_Sheet.Cells(logRowHeader, logColSyncOriValue) = Ori_Workbook.FullName
     Log_Sheet.Cells(logRowHeader, logColSyncRevValue) = Rev_Workbook.FullName
     bMultipleSheets = False
-
+    
+    bPrimaryKey = Cfg_Sheet.Cells(cfgRowPrimaryKey, cfgColOption).Value = "YES"
+    bHasHeaders = Cfg_Sheet.Cells(cfgRowTableHeaders, cfgColOption).Value = "YES"
+        
     ' Cycling through Sheets
     Do While True
         If Cfg_Sheet.Cells(cfgRowSheet, cfgColOriginal) = "[ALL]" Then
@@ -799,15 +802,9 @@ TRY_NEXT:
         If Ori_Range = "Auto Detect" Then
             Ori_Range = Detect_Table(Ori_Sheet)
         End If
-    
-        If bMultipleSheets Then
-            ' TODO: This is assuming the Original Size, but this is not the best
-            ' the best is to calculate the Super Set
-            Rev_Range = Ori_Range
-        Else
-            If Rev_Range = "Auto Detect" Then
-                Rev_Range = Detect_Table(Rev_Sheet)
-            End If
+        
+        If Rev_Range = "Auto Detect" Then
+            Rev_Range = Detect_Table(Rev_Sheet)
         End If
             
         Ori_iRow_Start = Range(Ori_Range).Row ' Setting the row Start
@@ -815,7 +812,15 @@ TRY_NEXT:
         oRow_Count = Range(Ori_Range).Rows.count
         rRow_Count = Range(Rev_Range).Rows.count
         
-        bHasHeaders = Cfg_Sheet.Cells(cfgRowTableHeaders, cfgColOption).Value = "YES"
+        If bMultipleSheets And bPrimaryKey = False Then ' Calculates the highest row count
+            If oRow_Count < rRow_Count Then
+                rRow_Count = oRow_Count
+            Else
+                oRow_Count = rRow_Count
+            End If
+            
+        End If
+        
             
         If bHasHeaders Then ' Table has headers
             iCol_Count = ColumnMatch(Ori_Sheet, Ori_Range, Rev_Sheet, Rev_Range, oCols, rCols)
@@ -844,11 +849,10 @@ TRY_NEXT:
         End If
     
         ' if is empty primary key is not used
-        bPrimaryKey = Cfg_Sheet.Cells(cfgRowPrimaryKey, cfgColOption).Value = "YES"
         If bPrimaryKey Then
             If Cfg_Sheet.Cells(cfgRowTableHeaders, cfgColOption).Value = "YES" Then ' table has headers
-                oPrimaryKeyCol = FindPrimaryKey(cfgColOriginal)
-                rPrimaryKeyCol = FindPrimaryKey(cfgColRevision)
+                oPrimaryKeyCol = FindPrimaryKey(Ori_Sheet, cfgColOriginal)
+                rPrimaryKeyCol = FindPrimaryKey(Rev_Sheet, cfgColRevision)
                 If oPrimaryKeyCol = 0 Or rPrimaryKeyCol = 0 Then
                     bPrimaryKey = False
                     MsgBox ("Failed to find primary key. Continuing without primary key")
@@ -861,16 +865,14 @@ TRY_NEXT:
         End If
         
         If StrComp(Cfg_Sheet.Cells(cfgRowAnnotate, cfgColOption).Value, "Original", vbTextCompare) = 0 Then
-            Set AnnotationSheet = Ori_Sheet
-            Annotation_Row_Start = Ori_iRow_Start
-            Annotation_Col_Start = Ori_iCol_Start
+            AnnotationSheet = 1 ' Original
+
         Else
             If StrComp(Cfg_Sheet.Cells(cfgRowAnnotate, cfgColOption).Value, "Revision", vbTextCompare) = 0 Then
-                Set AnnotationSheet = Rev_Sheet
-                Annotation_Row_Start = Rev_iRow_Start
-                Annotation_Col_Start = Rev_iCol_Start
+                AnnotationSheet = 2 ' Revision
+
             Else
-                Set AnnotationSheet = Nothing
+                AnnotationSheet = 0 ' None
             End If
         End If
         
@@ -966,7 +968,7 @@ TRY_NEXT:
                                 Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).FormulaLocal
                             End If
                         Else
-                            Rev_Data = ""
+                            Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).Text
                         End If
                     Else
                         Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).Text
@@ -983,7 +985,7 @@ TRY_NEXT:
                                 Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).FormulaLocal
                             End If
                         Else
-                            Ori_Data = ""
+                            Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).Text
                         End If
                     Else
                         Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).Text
@@ -1140,7 +1142,17 @@ TRY_NEXT:
                     
                     ' Annotating one of the sheets
                     If bMakeAnnotation Then
-                        Set targetCell = AnnotationSheet.Cells(oRow + Annotation_Row_Start, iCol + Annotation_Col_Start)
+                        If AnnotationSheet = 1 Then 'Original
+                            If oRow <> -1 Then
+                                Set targetCell = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol + Ori_iCol_Start)
+                            End If
+                        Else ' Revision
+                            If rRow <> -1 Then
+                                Set targetCell = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol + Rev_iCol_Start)
+                            End If
+                        End If
+                        
+                    
                         With targetCell
                             ' Formating Cells
                             If bApplyChangeFormat Then
@@ -1158,10 +1170,18 @@ TRY_NEXT:
                                 If Not (.comment Is Nothing) Then
                                     .comment.Delete
                                 End If
-                                comment = "Changed from: " + vbCr + vbLf + _
-                                           Ori_Data + vbCr + vbLf + _
-                                           "To: " + _
-                                           vbCr + vbLf + Rev_Data
+                                If Ori_Data = "" Then
+                                    comment = "Added:" + vbCr + vbLf + Rev_Data
+                                Else
+                                    If Rev_Data = "" Then
+                                        comment = "Deleted"
+                                    Else
+                                        comment = "Changed from: " + vbCr + vbLf + _
+                                               Ori_Data + vbCr + vbLf + _
+                                               "To: " + _
+                                               vbCr + vbLf + Rev_Data
+                                    End If
+                                End If
                                 targetCell.AddComment comment
                                 targetCell.comment.Visible = False
                                 
@@ -1179,7 +1199,11 @@ TRY_NEXT:
                 End If
             Next iCol
             If bRowChanged And annotateColumn <> 0 Then
-                AnnotationSheet.Cells(oRow + Annotation_Row_Start, annotateColumn).Value = "Modified"
+                If AnnotationSheet = 1 Then ' Original
+                    Ori_Sheet.Cells(oRow + Ori_iRow_Start, annotateColumn).Value = "Modified"
+                Else ' Revision
+                    Rev_Sheet.Cells(oRow + Rev_iRow_Start, annotateColumn).Value = "Modified"
+                End If
             End If
     
             ' Informing the user
