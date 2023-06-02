@@ -1,6 +1,9 @@
 # ExcelComparator
 VBA macros that compare difference between Excel Worksheet comparators
 
+Version 2.2 (09 August 2020)
+Paypal Link update
+
 Version 2.1 (13 June 2020)
 Changing Layout of the Difference Sheet
 Minor bug fixes

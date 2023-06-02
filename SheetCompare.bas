@@ -996,11 +996,13 @@ TRY_NEXT:
         
         End If
         
-        If StrComp(Cfg_Sheet.Cells(cfgRowAnnotate, cfgColOption).Value, "Original", vbTextCompare) = 0 Then
+        If StrComp(Cfg_Sheet.Cells(cfgRowAnnotate, cfgColOption).Value, _
+          ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionOriginal, colLanguage).Text, vbTextCompare) = 0 Then
             AnnotationSheet = 1 ' Original
 
         Else
-            If StrComp(Cfg_Sheet.Cells(cfgRowAnnotate, cfgColOption).Value, "Revision", vbTextCompare) = 0 Then
+            If StrComp(Cfg_Sheet.Cells(cfgRowAnnotate, cfgColOption).Value, _
+               ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionRevision, colLanguage).Text, vbTextCompare) = 0 Then
                 AnnotationSheet = 2 ' Revision
 
             Else
@@ -1336,9 +1338,29 @@ TRY_NEXT:
             Next iCol
             If bRowChanged And annotateColumn <> 0 Then
                 If AnnotationSheet = 1 Then ' Original
-                    Ori_Sheet.Cells(oRow + Ori_iRow_Start, annotateColumn).Value = "Modified"
+                    With Ori_Sheet.Range(oRow + Ori_iRow_Start, "TODO")
+                                    .Interior.Pattern = ChangedCellFormat.Interior.Pattern
+                                    .Interior.PatternColorIndex = ChangedCellFormat.Interior.PatternColorIndex
+                                    .Interior.Color = ChangedCellFormat.Interior.Color
+                                    .Interior.TintAndShade = ChangedCellFormat.Interior.TintAndShade
+                                    .Font.Color = ChangedCellFormat.Font.Color
+                                    ' .Interior.ColorIndex = ChangedCellFormat.Interior.ColorIndex
+                                    ' .Font = ChangedCellFormat.Font
+                                    ' .Borders = ChangedCellFormat.Borders
+                        
+                    End With
                 Else ' Revision
-                    Rev_Sheet.Cells(oRow + Rev_iRow_Start, annotateColumn).Value = "Modified"
+                    With Rev_Sheet.Range(rRow + Rev_iRow_Start, "TODO")
+                                .Interior.Pattern = ChangedCellFormat.Interior.Pattern
+                                    .Interior.PatternColorIndex = ChangedCellFormat.Interior.PatternColorIndex
+                                    .Interior.Color = ChangedCellFormat.Interior.Color
+                                    .Interior.TintAndShade = ChangedCellFormat.Interior.TintAndShade
+                                    .Font.Color = ChangedCellFormat.Font.Color
+                                    ' .Interior.ColorIndex = ChangedCellFormat.Interior.ColorIndex
+                                    ' .Font = ChangedCellFormat.Font
+                                    ' .Borders = ChangedCellFormat.Borders
+                        
+                    End With
                 End If
             End If
     
@@ -1584,24 +1606,12 @@ Sub MergeArrays(ByRef Ori() As String, ByRef Rev() As String, ByRef Mrg() As Str
     y = 0
     x = 0
    
-    Do
+    While r + x < RevLen And o + y < OriLen
         compResult = tokenCompareNoComparison 'This means no comparison was done
-        If r + x < RevLen And o + y < OriLen Then
-            compResult = CompareTokens(Rev(r + x), Ori(o + y))
-            If compResult > tokenCompareDifferent Then GoTo MATCHED
-        End If
-        If o + x < OriLen And r + y < RevLen Then
-            compResult = CompareTokens(Ori(o + x), Rev(r + y))
-            If compResult > tokenCompareDifferent Then
-                ' Revert Y and X'
-                i = x
-                x = y
-                y = i
-            End If
-        End If
-    
-MATCHED:
-        If compResult > tokenCompareNoComparison Then
+        
+        compResult = CompareTokens(Rev(r + x), Ori(o + y))
+        If compResult > tokenCompareDifferent Then
+            If compResult > tokenCompareNoComparison Then
                 ' somethng inserted and deleted
                 For i = 0 To y - 1
                     Mrg(m) = Ori(o)
@@ -1627,15 +1637,45 @@ MATCHED:
                 r = r + 1
                 x = 0
                 y = 0
+            End If
         Else
-            ' Keep trying
-            y = y + 1
-            If y >= x Then
+            compResult = CompareTokens(Ori(o + x), Rev(r + y))
+            If compResult > tokenCompareDifferent Then
+                ' somethng inserted and deleted
+                For i = 0 To x - 1
+                    Mrg(m) = Ori(o)
+                    mrk(m) = "X"
+                    m = m + 1
+                    o = o + 1
+                Next i
+                For i = 0 To y - 1
+                    Mrg(m) = Rev(r)
+                    mrk(m) = "_"
+                    m = m + 1
+                    r = r + 1
+                Next i
+                ' Matched
+                If compResult = tokenCompareEqual Then
+                    Mrg(m) = Ori(o)
+                    mrk(m) = "."
+                Else
+                    Call MergeTokens(Ori(o), Rev(r), Mrg(m), mrk(m))
+                End If
+                m = m + 1
+                o = o + 1
+                r = r + 1
+                x = 0
                 y = 0
-                x = x + 1
+            Else
+                ' Keep trying
+                y = y + 1
+                If y >= x Then
+                    y = 0
+                    x = x + 1
+                End If
             End If
         End If
-    Loop While compResult <> tokenCompareNoComparison
+    Loop
 
     ' Now complete till the end with the remaining
     Do While o < OriLen
