@@ -1,6 +1,9 @@
 # ExcelComparator
 VBA macros that compare difference between Excel Worksheet comparators
 
+Version 2.0 (23 May 2020)
+Multilingual Support (English, Français, Português, Español, русский, and Chinese)
+
 Version 1.10a (20 May 2020)
 Fixed bug on the sheet anotation when no headers are being used.
 
