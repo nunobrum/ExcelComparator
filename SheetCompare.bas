@@ -1643,19 +1643,22 @@ Function UnicodeToArray(inString As String) As String()
 End Function
 
 Function StreamFormula(inString As String) As String
-    Dim outString As String
+    Dim outString, ch As String
     Dim i As Integer
+    Dim inText As Boolean
+    inText = False
     If Left(inString, 1) = "=" Then
-        For Each ch In inString
+        For i = 1 To Len(inString)
+            ch = Mid(inString, i, 1)
             If ch = """" Then
+                inText = Not inText
+            End If
+            If Not inText And ch = ";" Then
                 outString = outString & "," ' Replaces ; by ,
             Else
-                If ch = """" Then
-                    outString = outString & ch ' Doubles the "
-                End If
                 outString = outString & ch
             End If
-        Next ch
+        Next i
         StreamFormula = outString
     Else
         StreamFormula = inString ' Don't do anything

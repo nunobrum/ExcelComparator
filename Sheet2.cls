@@ -285,7 +285,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                     Call SetOriCell(TCell.Row)
                     If Not Ori_Cell Is Nothing Then
                         If ThisWorkbook.Sheets("Config").Cells(cfgRowWhat, cfgColOriginal) = "Formulas" Then
-                            Ori_Cell = StreamFormula(TCell)
+                            Ori_Cell.Formula = StreamFormula(TCell.Formula)
                         Else
                             Ori_Cell = TCell
                         End If
@@ -295,7 +295,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                     Call SetRevCell(TCell.Row)
                     If Not Rev_Cell Is Nothing Then
                         If ThisWorkbook.Sheets("Config").Cells(cfgRowWhat, cfgColOriginal) = "Formulas" Then
-                            Rev_Cell = StreamFormula(TCell)
+                            Rev_Cell = StreamFormula(TCell.Formula)
                         Else
                             Rev_Cell = TCell
                         End If

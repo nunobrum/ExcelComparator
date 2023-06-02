@@ -1,6 +1,12 @@
 # ExcelComparator
 VBA macros that compare difference between Excel Worksheet comparators
 
+Version 1.8a (24 January 2018)
+Fixing problem when opening for the first time.
+
+Version 1.8 (15 December 2017)
+Formula Compare and Sync Browsing by default
+
 Version 1.7b (19 November 2017)
 Minor correction in the Sync Navigation
 
