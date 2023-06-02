@@ -7,6 +7,7 @@ Public Const sheetLanguage = 3
 ' Config Sheet constants
 Public Const cfgColOriginal = 2
 Public Const cfgColRevision = 3
+Public Const CfgColTitle = 1
 Public Const cfgColOption = 2
 
 Public Const cfgRowFilename As Long = 2
@@ -23,8 +24,8 @@ Public Const cfgRowAnnoUseFormat As Long = 15
 Public Const cfgRowAnnoCellFormat As Long = 16
 Public Const cfgRowAnnoComments As Long = 17
 Public Const cfgRowAnnoMergeText As Long = 18
-Public Const cfgRowAnnoMark As Long = 19
-Public Const cfgRowAnnoMarkColumn As Long = 20
+Public Const cfgRowAnnoUseRowFormat As Long = 19
+Public Const cfgRowAnnoRowFormat As Long = 20
 Public Const cfgRowReport As Long = 22
 Public Const cfgRowRepWithMerge As Long = 23
 
@@ -77,9 +78,9 @@ Public Const rowMessageProgress = 19
 Public Const rowForConfigA2 = 20
 Public Const rowOptionValues = 30
 Public Const rowOptionFormulas = 31
-Public Const rowOptionNone = 49
-Public Const rowOptionOriginal = 50
-Public Const rowOptionRevision = 51
+Public Const rowOptionNone = 48
+Public Const rowOptionOriginal = 49
+Public Const rowOptionRevision = 50
 
 ' usual language definitions
 Public OptionYes, OptionNo, OptionAutoDetect, ALLSheets As String
@@ -98,6 +99,7 @@ Function ColNumber(col As String) As Integer
         ColNumber = Range(col + "1").Column
     End If
 End Function
+
 
 Function GetObject(wrkSheet As Variant, Name As String) As Variant
     Dim Obj As Variant
@@ -272,8 +274,8 @@ Sub ResetFields()
         .Cells(cfgRowAnnoUseFormat, cfgColOption) = OptionYes
         .Cells(cfgRowAnnoComments, cfgColOption) = OptionNo
         .Cells(cfgRowAnnoMergeText, cfgColOption) = OptionNo
-        .Cells(cfgRowAnnoMark, cfgColOption) = OptionNo
-        .Cells(cfgRowAnnoMarkColumn, cfgColOption) = "AA"
+        .Cells(cfgRowAnnoUseRowFormat, cfgColOption) = OptionNo
+        '.Cells(cfgRowAnnoRowFormat, cfgColOption) = langSheet.Cells(Row, colLanguage)
         .Cells(cfgRowReport, cfgColOption) = OptionNo
         .Cells(cfgRowRepWithMerge, cfgColOption) = OptionNo
     End With
@@ -767,7 +769,7 @@ Sub Compare_Excel_Files_WorkSheets()
     Dim oRow_Count, rRow_Count As Long
     Dim oCols() As Long
     Dim rCols() As Long
-    Dim iCol_Count As Double, oCol As Long, rCol As Long
+    Dim iCol_Count As Long, oCol As Long, rCol As Long, pCol As Long
     Dim Ori_iRow_Start As Long, Ori_iCol_Start As Long
     Dim Rev_iRow_Start As Long, Rev_iCol_Start As Long
     Dim Rep_iRow_Start, log_iRow As Long
@@ -783,7 +785,7 @@ Sub Compare_Excel_Files_WorkSheets()
     passedCount = 0 ' Initializes with a zero count
     
     
-    Dim iCol As Double, iCol1 As Integer
+    Dim iCol As Long, iCol1 As Long
     Dim Ori_Data As String, Rev_Data As String
     Dim tempWidth As Integer
     
@@ -794,14 +796,14 @@ Sub Compare_Excel_Files_WorkSheets()
 
     Dim AnnotationSheet As Integer
     Dim bApplyChangeFormat As Boolean, bInsertComment As Boolean
-    Dim ChangedCellFormat As Range
+    Dim ChangedCellFormat, ChangedRowFormat As Range
     Dim targetCell As Range
     Dim bTextMerge, bReportMerge As Boolean
     Dim bCompareFormulas As Boolean, bR1C1Format As Boolean, bHasHeaders As Boolean
     Dim comment As String
+    Dim rangeReference As String
 
-    Dim annotateColumn As Integer
-
+    Dim formatRow As Boolean
     Dim iDiffCount As Double
     
     Set Cfg_Sheet = ThisWorkbook.Sheets(sheetConfig)
@@ -833,11 +835,12 @@ Sub Compare_Excel_Files_WorkSheets()
         bInsertComment = (StrComp(Cfg_Sheet.Cells(cfgRowAnnoComments, cfgColOption), OptionYes, vbTextCompare) = 0)     ' Insert difference in comments
         bTextMerge = (StrComp(Cfg_Sheet.Cells(cfgRowAnnoMergeText, cfgColOption), OptionYes, vbTextCompare) = 0) ' Use Merge Text in the differences
         
-        ' if annotateColumn is zero, the annotation is not done
-        If (StrComp(Cfg_Sheet.Cells(cfgRowAnnoMark, cfgColOption), OptionYes, vbTextCompare) = 0) Then  ' Mark modified Rows
-            annotateColumn = ColNumber(Cfg_Sheet.Cells(cfgRowAnnoMarkColumn, cfgColOption).Text)   ' use column
+        ' if Color Modified Rows then each row is colore
+        If (StrComp(Cfg_Sheet.Cells(cfgRowAnnoUseRowFormat, cfgColOption), OptionYes, vbTextCompare) = 0) Then  ' Mark modified Rows
+            formatRow = True
+            Set ChangedRowFormat = Cfg_Sheet.Cells(cfgRowAnnoRowFormat, cfgColOption) ' Changed Cell Format
         Else
-            annotateColumn = 0
+            formatRow = False
         End If
     End If
      
@@ -1127,6 +1130,47 @@ TRY_NEXT:
                 End If
                 'Compare Data From Excel Sheets & Highlight the Mismatches
                 If Ori_Data <> Rev_Data Then
+                    ' if to identify Rows with changes
+                    If formatRow And bRowChanged = False Then
+                        bRowChanged = True ' Assures that this is only done once
+                        If AnnotationSheet = 1 Then ' Original
+                            If oRow > 0 Then
+                                For iCol1 = 0 To iCol_Count - 1
+                                    If bHasHeaders Then ' Will index the list of columns to compare
+                                        oCol = oCols(iCol1)
+                                    Else ' Otherwise it scans sequentialy begining on
+                                        oCol = iCol1 + Ori_iCol_Start
+                                    End If
+                                    With Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol)
+                                        .Interior.Pattern = ChangedRowFormat.Interior.Pattern
+                                        .Interior.PatternColorIndex = ChangedRowFormat.Interior.PatternColorIndex
+                                        .Interior.Color = ChangedRowFormat.Interior.Color
+                                        .Interior.TintAndShade = ChangedRowFormat.Interior.TintAndShade
+                                        ' .Interior.ColorIndex = ChangedRowFormat.Interior.ColorIndex
+                                    End With
+                                Next iCol1
+                            End If
+                        Else ' Revision
+                            If rRow > 0 Then
+                                For iCol1 = 0 To iCol_Count - 1
+                                    If bHasHeaders Then ' Will index the list of columns to compare
+                                        rCol = rCols(iCol1)
+                                    Else ' Otherwise it scans sequentialy begining on
+                                        rCol = iCol1 + Rev_iCol_Start
+                                    End If
+                                    With Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol)
+                                        .Interior.Pattern = ChangedRowFormat.Interior.Pattern
+                                        .Interior.PatternColorIndex = ChangedRowFormat.Interior.PatternColorIndex
+                                        .Interior.Color = ChangedRowFormat.Interior.Color
+                                        .Interior.TintAndShade = ChangedRowFormat.Interior.TintAndShade
+                                        ' .Interior.ColorIndex = ChangedRowFormat.Interior.ColorIndex
+                                    End With
+                                Next iCol1
+                            End If
+                        End If
+                    End If
+                    ' end if to identify rows with changes
+                    
                     iDiffCount = iDiffCount + 1
                     'Avoid problems with formulas
                     If bCompareFormulas Then
@@ -1333,37 +1377,8 @@ TRY_NEXT:
                             End If
                         End If
                     End If
-                    bRowChanged = True
                 End If
             Next iCol
-            If bRowChanged And annotateColumn <> 0 Then
-                If AnnotationSheet = 1 Then ' Original
-                    With Ori_Sheet.Range(oRow + Ori_iRow_Start, "TODO")
-                                    .Interior.Pattern = ChangedCellFormat.Interior.Pattern
-                                    .Interior.PatternColorIndex = ChangedCellFormat.Interior.PatternColorIndex
-                                    .Interior.Color = ChangedCellFormat.Interior.Color
-                                    .Interior.TintAndShade = ChangedCellFormat.Interior.TintAndShade
-                                    .Font.Color = ChangedCellFormat.Font.Color
-                                    ' .Interior.ColorIndex = ChangedCellFormat.Interior.ColorIndex
-                                    ' .Font = ChangedCellFormat.Font
-                                    ' .Borders = ChangedCellFormat.Borders
-                        
-                    End With
-                Else ' Revision
-                    With Rev_Sheet.Range(rRow + Rev_iRow_Start, "TODO")
-                                .Interior.Pattern = ChangedCellFormat.Interior.Pattern
-                                    .Interior.PatternColorIndex = ChangedCellFormat.Interior.PatternColorIndex
-                                    .Interior.Color = ChangedCellFormat.Interior.Color
-                                    .Interior.TintAndShade = ChangedCellFormat.Interior.TintAndShade
-                                    .Font.Color = ChangedCellFormat.Font.Color
-                                    ' .Interior.ColorIndex = ChangedCellFormat.Interior.ColorIndex
-                                    ' .Font = ChangedCellFormat.Font
-                                    ' .Borders = ChangedCellFormat.Borders
-                        
-                    End With
-                End If
-            End If
-    
             ' Informing the user
             If (oRow Mod 30) = 0 Then
                 Application.StatusBar = "Progress (sheet:" & Ori_SheetName & " row:" & oRow & ")"
@@ -1382,6 +1397,12 @@ EXIT_LOOP:
     '''''Process Completed
     Application.StatusBar = False
     Application.ScreenUpdating = True
+    
+   
+    Call Sheet2.InitVars
+    Call set_YES_NO(Log_Sheet.Cells(logRowSyncNavigation, logColSyncNavigation + 1), bbSyncNavigation And (Not bTextMerge)) ' Restore Value
+    Call set_YES_NO(Log_Sheet.Cells(logRowUpdateSheets, logColUpdateSheets + 1), bbUpdateSheets) ' Restore Value
+
     
     ' Now formatting the Report Sheet
     ThisWorkbook.Sheets(sheetDiff).Activate
@@ -1407,15 +1428,24 @@ EXIT_LOOP:
         .SplitRow = logRowHeader
     End With
     ActiveWindow.FreezePanes = True
-    Range("G" & (logRowHeader + 1)).Select
     
-    Call Sheet2.InitVars
-    Call set_YES_NO(Log_Sheet.Cells(logRowSyncNavigation, logColSyncNavigation + 1), bbSyncNavigation) ' Restore Value
-    Call set_YES_NO(Log_Sheet.Cells(logRowUpdateSheets, logColUpdateSheets + 1), bbUpdateSheets) ' Restore Value
-    Call ArrangeWindows
+    If bMakeAnnotation Then
+        ' Will activate the sheet where the differences were noted
+        If AnnotationSheet = 1 Then ' Original was annotated
+            Ori_Workbook.Activate
+        Else ' Revision was annotated
+            Rev_Workbook.Activate
+        End If
+    Else
+        ' No Text Merge, then will show the Differences sheet
+        Call ArrangeWindows
+        Range("G" & (logRowHeader + 1)).Select
+    End If
+    
     MsgBox FormatMessage(ThisWorkbook.Sheets(sheetLanguage).Cells(rowMessageFinished, colLanguage).Text, _
                         comparedSheets, iDiffCount) & vbCr & "(c) Nuno Brum, www.nunobrum.com"
     
+
 End Sub
 
 
@@ -1468,7 +1498,7 @@ Function CompareTokens(Ori As String, Rev As String) As Integer
             x = 0
             y = 0
             matches = 0
-            Do While o + x < OriLen And r + x < RevLen
+            Do While o + x <= OriLen And r + x <= RevLen
                 If Mid(Ori, o + x, 1) = Mid(Rev, r + y, 1) Then
                     o = o + x + 1
                     r = r + y + 1
@@ -1534,8 +1564,8 @@ Sub MergeTokens(Ori As String, Rev As String, ByRef Mrg As String, ByRef mrk As 
             End If
             Mrg = Mrg + Mid(Ori, o + y, 1)
             mrk = mrk + " "
-            o = o + x + 1
-            r = r + y + 1
+            o = o + y + 1
+            r = r + x + 1
             x = 0
             y = 0
         Else
@@ -1606,7 +1636,7 @@ Sub MergeArrays(ByRef Ori() As String, ByRef Rev() As String, ByRef Mrg() As Str
     y = 0
     x = 0
    
-    While r + x < RevLen And o + y < OriLen
+    Do While r + x < RevLen And o + y < OriLen
         compResult = tokenCompareNoComparison 'This means no comparison was done
         
         compResult = CompareTokens(Rev(r + x), Ori(o + y))
@@ -1714,11 +1744,13 @@ Sub MergeText(OriText As String, RevText As String, cell As Range)
         ' Insert the revisioned text underlined
         cell.Value = RevText
         cell.Characters(Start:=1, length:=LR).Font.Underline = xlUnderlineStyleSingle
+        cell.Characters(Start:=1, length:=LR).Font.Color = vbBlue
     Else
         If LR = 0 Then  'If the Revisioned text is empty
             ' Insert the original text underlined
             cell.Value = OriText
             cell.Characters(Start:=1, length:=LO).Font.Strikethrough = True
+            cell.Characters(Start:=1, length:=LO).Font.Color = vbRed
         Else
             ' Otherwise a comparison is made
             If IsNumeric(RevText) = False Then
@@ -1731,16 +1763,18 @@ Sub MergeText(OriText As String, RevText As String, cell As Range)
                 P = 1
                 With cell
                     .Value = msg
-                    For i = 0 To UBound(Mrg)
+                    For i = LBound(Mrg) To UBound(Mrg)
                         l = Len(Mrg(i))
                         m = mrk(i)
                         If Len(m) > 1 Then ' This a a merged word
                             For J = 1 To l
                                 If Mid(m, J, 1) = "X" Then
                                     .Characters(Start:=P, length:=1).Font.Strikethrough = True
+                                    .Characters(Start:=P, length:=1).Font.Color = vbRed
                                 Else
                                     If Mid(m, J, 1) = "_" Then
                                         .Characters(Start:=P, length:=1).Font.Underline = xlUnderlineStyleSingle
+                                        .Characters(Start:=P, length:=1).Font.Color = vbBlue
                                     End If
                                 End If
                                 P = P + 1
@@ -1748,9 +1782,11 @@ Sub MergeText(OriText As String, RevText As String, cell As Range)
                         Else
                             If m = "X" Then
                                 .Characters(Start:=P, length:=l).Font.Strikethrough = True
+                                .Characters(Start:=P, length:=l).Font.Color = vbRed
                             Else
                                 If m = "_" Then
                                     .Characters(Start:=P, length:=l).Font.Underline = xlUnderlineStyleSingle
+                                    .Characters(Start:=P, length:=l).Font.Color = vbBlue
                                 End If
                             End If
                             P = P + l
@@ -1760,7 +1796,9 @@ Sub MergeText(OriText As String, RevText As String, cell As Range)
             Else
                 cell.Value = "'" + OriText + vbCr + vbLf + RevText
                 cell.Characters(Start:=1, length:=LO).Font.Strikethrough = True
+                cell.Characters(Start:=1, length:=LO).Font.Color = vbRed
                 cell.Characters(Start:=LO + 3, length:=LR).Font.Underline = xlUnderlineStyleSingle
+                cell.Characters(Start:=LO + 3, length:=LR).Font.Color = vbBlue
             End If
         End If
     End If

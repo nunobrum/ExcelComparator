@@ -166,9 +166,32 @@ Private Sub Worksheet_Change(ByVal target As Range)
 
         If target.row = cfgRowAnnotate And target.Column = cfgColOption Then ' Make anotations on
             If target.Value = ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionNone, colLanguage).Text Then
-                Call RangeDisable(ThisWorkbook.Sheets(sheetConfig).Range("A15:A20,B15,B17:B20"))
+                Call RangeDisable(ThisWorkbook.Sheets(sheetConfig).Range("A15:A20,B15,B17:B19"))
             Else
-                Call RangeEnable(ThisWorkbook.Sheets(sheetConfig).Range("A15:A20,B15,B17:B20"))
+                Call RangeEnable(ThisWorkbook.Sheets(sheetConfig).Range("A15,A17:A19,B15,B17:B19"))
+                Call Worksheet_Change(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowAnnoUseFormat, cfgColOption))
+                Call Worksheet_Change(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowAnnoUseRowFormat, cfgColOption))
+            End If
+            Exit Sub
+        End If
+        If target.row = cfgRowAnnoUseFormat And target.Column = cfgColOption Then
+            If target.Value = OptionYes And _
+                ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowAnnotate, cfgColOption).Text <> _
+                ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionNone, colLanguage).Text Then
+                Call RangeEnable(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowAnnoCellFormat, CfgColTitle))
+            Else
+                Call RangeDisable(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowAnnoCellFormat, CfgColTitle))
+            End If
+            Exit Sub
+        End If
+        
+        If target.row = cfgRowAnnoUseRowFormat And target.Column = cfgColOption Then
+            If target.Value = OptionYes And _
+                ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowAnnotate, cfgColOption).Text <> _
+                ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionNone, colLanguage).Text Then
+                Call RangeEnable(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowAnnoRowFormat, CfgColTitle))
+            Else
+                Call RangeDisable(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowAnnoRowFormat, CfgColTitle))
             End If
             Exit Sub
         End If

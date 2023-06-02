@@ -135,66 +135,48 @@ ERROR:
     Set Rev_Cell = Nothing
 End Sub
 
-
-
-Sub ReverseColors(target As Range)
-    Dim color_temp As Double
-    With target
-        color_temp = .Font.Color
-        .Font.Color = .Interior.Color
-        .Interior.Color = color_temp
-        '.Interior.Color = vbYellow
-        '.Font.Color = vbBlack
-        If use_borders Then
-            .Borders.Item(xlEdgeBottom).LineStyle = xlDashDot
-            .Borders.Item(xlEdgeRight).LineStyle = xlDashDot
-            .Borders.Item(xlEdgeTop).LineStyle = xlDashDot
-            .Borders.Item(xlEdgeLeft).LineStyle = xlDashDot
-            .Borders.Item(xlEdgeBottom).Weight = xlThick
-            .Borders.Item(xlEdgeRight).Weight = xlThick
-            .Borders.Item(xlEdgeTop).Weight = xlThick
-            .Borders.Item(xlEdgeLeft).Weight = xlThick
-            '''.BorderAround ColorIndex:=5, LineStyle:=xlSlantDashDot, Weight:=xlThick
-        End If
-    End With
-End Sub
-
 Sub ReReverse()
     On Error GoTo NOK_ORI
 
     If Not RV_Ori_Cell Is Nothing Then
-        RV_Ori_Cell.Font.Color = Ori_Color
-        RV_Ori_Cell.Interior.Color = Ori_BckGr
-        RV_Ori_Cell.Interior.Pattern = Ori_Pattern
-        RV_Ori_Cell.Interior.TintAndShade = Ori_TaS
         If use_borders Then
-            RV_Ori_Cell.Borders.Item(xlEdgeBottom).LineStyle = Ori_BottomStyle
-            RV_Ori_Cell.Borders.Item(xlEdgeRight).LineStyle = Ori_RightStyle
-            RV_Ori_Cell.Borders.Item(xlEdgeTop).LineStyle = Ori_TopStyle
-            RV_Ori_Cell.Borders.Item(xlEdgeLeft).LineStyle = Ori_LeftStyle
-            RV_Ori_Cell.Borders.Item(xlEdgeBottom).Weight = Ori_BottomWeight
-            RV_Ori_Cell.Borders.Item(xlEdgeRight).Weight = Ori_RightWeight
-            RV_Ori_Cell.Borders.Item(xlEdgeTop).Weight = Ori_TopWeight
-            RV_Ori_Cell.Borders.Item(xlEdgeLeft).Weight = Ori_LeftWeight
+            With RV_Ori_Cell.Borders
+                .Item(xlEdgeBottom).LineStyle = Ori_BottomStyle
+                .Item(xlEdgeRight).LineStyle = Ori_RightStyle
+                .Item(xlEdgeTop).LineStyle = Ori_TopStyle
+                .Item(xlEdgeLeft).LineStyle = Ori_LeftStyle
+                .Item(xlEdgeBottom).Weight = Ori_BottomWeight
+                .Item(xlEdgeRight).Weight = Ori_RightWeight
+                .Item(xlEdgeTop).Weight = Ori_TopWeight
+                .Item(xlEdgeLeft).Weight = Ori_LeftWeight
+            End With
+        Else
+            RV_Ori_Cell.Font.Color = Ori_Color
+            RV_Ori_Cell.Interior.Color = Ori_BckGr
+            RV_Ori_Cell.Interior.Pattern = Ori_Pattern
+            RV_Ori_Cell.Interior.TintAndShade = Ori_TaS
         End If
     End If
 NOK_ORI:
     Set RV_Ori_Cell = Nothing
     On Error GoTo NOK_REV
     If Not RV_Rev_Cell Is Nothing Then
-        RV_Rev_Cell.Font.Color = Rev_Color
-        RV_Rev_Cell.Interior.Color = Rev_BckGr
-        RV_Rev_Cell.Interior.Pattern = Rev_Pattern
-        RV_Rev_Cell.Interior.TintAndShade = Rev_TaS
         If use_borders Then
-            RV_Rev_Cell.Borders.Item(xlEdgeBottom).LineStyle = Rev_BottomStyle
-            RV_Rev_Cell.Borders.Item(xlEdgeRight).LineStyle = Rev_RightStyle
-            RV_Rev_Cell.Borders.Item(xlEdgeTop).LineStyle = Rev_TopStyle
-            RV_Rev_Cell.Borders.Item(xlEdgeLeft).LineStyle = Rev_LeftStyle
-            RV_Rev_Cell.Borders.Item(xlEdgeBottom).Weight = Rev_BottomWeight
-            RV_Rev_Cell.Borders.Item(xlEdgeRight).Weight = Rev_RightWeight
-            RV_Rev_Cell.Borders.Item(xlEdgeTop).Weight = Rev_TopWeight
-            RV_Rev_Cell.Borders.Item(xlEdgeLeft).Weight = Rev_LeftWeight
+            With RV_Rev_Cell.Borders
+                .Item(xlEdgeBottom).LineStyle = Rev_BottomStyle
+                .Item(xlEdgeRight).LineStyle = Rev_RightStyle
+                .Item(xlEdgeTop).LineStyle = Rev_TopStyle
+                .Item(xlEdgeLeft).LineStyle = Rev_LeftStyle
+                .Item(xlEdgeBottom).Weight = Rev_BottomWeight
+                .Item(xlEdgeRight).Weight = Rev_RightWeight
+                .Item(xlEdgeTop).Weight = Rev_TopWeight
+                .Item(xlEdgeLeft).Weight = Rev_LeftWeight
+            End With
+        Else
+            RV_Rev_Cell.Font.Color = Rev_Color
+            RV_Rev_Cell.Interior.Color = Rev_BckGr
+            RV_Rev_Cell.Interior.Pattern = Rev_Pattern
+            RV_Rev_Cell.Interior.TintAndShade = Rev_TaS
         End If
     End If
 NOK_REV:
@@ -204,21 +186,36 @@ End Sub
 Sub HighlightOriginal()
     If Ori_Cell Is Nothing Then Exit Sub
     Set RV_Ori_Cell = Ori_Cell
-    Ori_Pattern = Ori_Cell.Interior.Pattern
-    Ori_TaS = Ori_Cell.Interior.TintAndShade
-    Ori_BckGr = Ori_Cell.Interior.Color
-    Ori_Color = Ori_Cell.Font.Color
     If use_borders Then
-        Ori_LeftStyle = Ori_Cell.Borders.Item(xlEdgeLeft).LineStyle
-        Ori_TopStyle = Ori_Cell.Borders.Item(xlEdgeTop).LineStyle
-        Ori_BottomStyle = Ori_Cell.Borders.Item(xlEdgeBottom).LineStyle
-        Ori_RightStyle = Ori_Cell.Borders.Item(xlEdgeRight).LineStyle
-        Ori_BottomWeight = RV_Ori_Cell.Borders.Item(xlEdgeBottom).Weight
-        Ori_RightWeight = RV_Ori_Cell.Borders.Item(xlEdgeRight).Weight
-        Ori_TopWeight = RV_Ori_Cell.Borders.Item(xlEdgeTop).Weight
-        Ori_LeftWeight = RV_Ori_Cell.Borders.Item(xlEdgeLeft).Weight
+        With Ori_Cell.Borders
+            Ori_LeftStyle = .Item(xlEdgeLeft).LineStyle
+            Ori_TopStyle = .Item(xlEdgeTop).LineStyle
+            Ori_BottomStyle = .Item(xlEdgeBottom).LineStyle
+            Ori_RightStyle = .Item(xlEdgeRight).LineStyle
+            Ori_BottomWeight = .Item(xlEdgeBottom).Weight
+            Ori_RightWeight = .Item(xlEdgeRight).Weight
+            Ori_TopWeight = .Item(xlEdgeTop).Weight
+            Ori_LeftWeight = .Item(xlEdgeLeft).Weight
+            .Item(xlEdgeBottom).LineStyle = xlDashDot
+            .Item(xlEdgeRight).LineStyle = xlDashDot
+            .Item(xlEdgeTop).LineStyle = xlDashDot
+            .Item(xlEdgeLeft).LineStyle = xlDashDot
+            .Item(xlEdgeBottom).Weight = xlThick
+            .Item(xlEdgeRight).Weight = xlThick
+            .Item(xlEdgeTop).Weight = xlThick
+            .Item(xlEdgeLeft).Weight = xlThick
+        End With
+    Else
+        Ori_Pattern = Ori_Cell.Interior.Pattern
+        Ori_TaS = Ori_Cell.Interior.TintAndShade
+        Ori_BckGr = Ori_Cell.Interior.Color
+        Ori_Color = Ori_Cell.Font.Color
+        If IsNull(Ori_Color) Then
+            Ori_Color = 0
+        End If
+        Ori_Cell.Font.Color = Ori_BckGr
+        Ori_Cell.Interior.Color = Ori_Color
     End If
-    Call ReverseColors(Ori_Cell)
     'Call BringToFrontOriCell
     'Application.Wait (Now + TimeValue("00:00:00.2"))
 End Sub
@@ -226,21 +223,36 @@ End Sub
 Sub HighlightRevision()
     If Rev_Cell Is Nothing Then Exit Sub
     Set RV_Rev_Cell = Rev_Cell
-    Rev_Pattern = Rev_Cell.Interior.Pattern
-    Rev_BckGr = Rev_Cell.Interior.Color
-    Rev_Color = Rev_Cell.Font.Color
-    Rev_TaS = Rev_Cell.Interior.TintAndShade
     If use_borders Then
-        Rev_LeftStyle = Rev_Cell.Borders.Item(xlEdgeLeft).LineStyle
-        Rev_TopStyle = Rev_Cell.Borders.Item(xlEdgeTop).LineStyle
-        Rev_BottomStyle = Rev_Cell.Borders.Item(xlEdgeBottom).LineStyle
-        Rev_RightStyle = Rev_Cell.Borders.Item(xlEdgeRight).LineStyle
-        Rev_BottomWeight = RV_Rev_Cell.Borders.Item(xlEdgeBottom).Weight
-        Rev_RightWeight = RV_Rev_Cell.Borders.Item(xlEdgeRight).Weight
-        Rev_TopWeight = RV_Rev_Cell.Borders.Item(xlEdgeTop).Weight
-        Rev_LeftWeight = RV_Rev_Cell.Borders.Item(xlEdgeLeft).Weight
+        With Rev_Cell.Borders
+            Rev_LeftStyle = .Item(xlEdgeLeft).LineStyle
+            Rev_TopStyle = .Item(xlEdgeTop).LineStyle
+            Rev_BottomStyle = .Item(xlEdgeBottom).LineStyle
+            Rev_RightStyle = .Item(xlEdgeRight).LineStyle
+            Rev_BottomWeight = .Item(xlEdgeBottom).Weight
+            Rev_RightWeight = .Item(xlEdgeRight).Weight
+            Rev_TopWeight = .Item(xlEdgeTop).Weight
+            Rev_LeftWeight = .Item(xlEdgeLeft).Weight
+            .Item(xlEdgeBottom).LineStyle = xlDashDot
+            .Item(xlEdgeRight).LineStyle = xlDashDot
+            .Item(xlEdgeTop).LineStyle = xlDashDot
+            .Item(xlEdgeLeft).LineStyle = xlDashDot
+            .Item(xlEdgeBottom).Weight = xlThick
+            .Item(xlEdgeRight).Weight = xlThick
+            .Item(xlEdgeTop).Weight = xlThick
+            .Item(xlEdgeLeft).Weight = xlThick
+        End With
+    Else
+        Rev_Pattern = Rev_Cell.Interior.Pattern
+        Rev_TaS = Rev_Cell.Interior.TintAndShade
+        Rev_BckGr = Rev_Cell.Interior.Color
+        Rev_Color = Rev_Cell.Font.Color
+        If IsNull(Rev_Color) Then
+            Rev_Color = 0
+        End If
+        Rev_Cell.Font.Color = Rev_BckGr
+        Rev_Cell.Interior.Color = Rev_Color
     End If
-    Call ReverseColors(Rev_Cell)
     'Call BringToFrontRevCell
     'Application.Wait (Now + TimeValue("00:00:00.2"))
 End Sub
@@ -314,77 +326,43 @@ Private Sub Worksheet_SelectionChange(ByVal target As Range)
     End If
         
     If ThisWorkbook.Sheets(sheetDiff).Cells(logRowSyncNavigation, logColSyncNavigation + 1) = OptionYes Then
+
         Call SetOriCell(target.row)
         Call SetRevCell(target.row)
             
-        'If Target.Column = logColSyncOriValue Then
+        'If target.Column = logColSyncOriValue Then
             Call BringToFrontOriCell
+            Call HighlightOriginal
             'ThisWorkbook.Activate
             'ThisWorkbook.Sheets(sheetDiff).Activate
-            'Target.Select
-            
+            'target.Select
         'End If
-        'If Target.Column = logColSyncRevValue Then
+        'If target.Column = logColSyncRevValue Then
             Call BringToFrontRevCell
+            Call HighlightRevision
             ThisWorkbook.Activate
             ThisWorkbook.Sheets(sheetDiff).Activate
-            'Target.Select
-            Call HighlightOriginal
-            Call HighlightRevision
+            'target.Select
         'End If
     End If
 End Sub
 
-Sub UpdateOriginal()
-    If Not Ori_Cell Is Nothing And _
-       Not Rev_Cell Is Nothing Then
-        Ori_Cell.Value = Rev_Cell.Value
-        Ori_Color = Rev_Color
-        Ori_BckGr = Rev_BckGr
-        Ori_Pattern = Rev_Pattern
-    End If
-End Sub
-
-Sub UpdateRevision()
-    If Not Ori_Cell Is Nothing And _
-       Not Rev_Cell Is Nothing Then
-       Rev_Cell.Value = Ori_Cell.Value
-        Rev_Color = Ori_Color
-        Rev_BckGr = Ori_BckGr
-        Rev_Pattern = Ori_Pattern
-    End If
-End Sub
-
-
-
 Sub BringToFrontOriCell()
-    Dim Ori_Cell_copy As Range
-    Set Ori_Cell_copy = Ori_Cell
-    'Call ReReverse
     If (Not Ori_Sheet Is Nothing) And (Not Ori_Cell Is Nothing) Then
         Ori_Workbook.Activate
         Ori_Sheet.Activate
         Ori_Cell.Show ' Show instead of select doesn't disrupt the Clipboard
-        'Ori_Cell.Select
-        'Ori_Workbook.Windows(1).Visible = True
-        'Ori_Workbook.Windows(1).ScrollRow = Ori_Cell.Row
-        'Ori_Workbook.Windows(1).ScrollColumn = Ori_Cell.Column
     End If
 End Sub
 
 Sub BringToFrontRevCell()
-    Dim Rev_Cell_copy As Range
-    Set Rev_Cell_copy = Rev_Cell
-    'Call ReReverse
     If (Not Rev_Workbook Is Nothing) And (Not Rev_Cell Is Nothing) Then
         Rev_Workbook.Activate
         Rev_Sheet.Activate
         Rev_Cell.Show ' Show instead of select doesn't disrupt the Clipboard
-        'Rev_Cell.Select
-        'Rev_Workbook.Windows(1).Visible = True
-        'Rev_Workbook.Windows(1).ScrollRow = Rev_Cell.Row
-        'Rev_Workbook.Windows(1).ScrollColumn = Rev_Cell.Column
     End If
 End Sub
+
+
 
 

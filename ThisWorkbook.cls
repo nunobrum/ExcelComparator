@@ -13,14 +13,14 @@ End Sub
 
 Private Sub Workbook_Open()
     Dim hyperlink As Variant
-    Sheet1.Cells(1, 4) = "Sheet Comparator 2v2" & vbCr & vbLf & _
+    Sheet1.Cells(1, 4) = "Sheet Comparator 2v3" & vbCr & vbLf & _
     "Running on Excel Version " & Application.Version & vbCr & vbLf & _
     Application.OperatingSystem
     Sheet1.Hyperlinks.Add _
                 Anchor:=Sheet1.Range("D28"), _
                 Address:="https://www.paypal.com/paypalme/send2NunoBrum", _
                 ScreenTip:="Donations will serve to fund the development of more tools and additional features." & _
-                "The remainer will be sent to non-profit organisations such as UNICEF and/or pencils of promise.", _
+                "The remainer will be sent to help Ukranian refugees", _
                 TextToDisplay:="Show your appreciation. Donate!"
                 
     Sheet1.Range("D28").Font.Color = RGB(255, 217, 102)
@@ -49,7 +49,8 @@ Private Sub Workbook_Open()
     Sheet2.InitVars
     'Call fillLanguagesCombo
     Call InitConfigStrings
-    
+    Application.Width = 1040
+    Application.Height = 650
 End Sub
 
 Private Sub Workbook_Activate()
