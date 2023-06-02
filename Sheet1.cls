@@ -8,118 +8,183 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 
+
+Sub RangeEnable(rng As Range)
+    With rng.Font
+        .ColorIndex = xlAutomatic
+        .TintAndShade = 0
+    End With
+End Sub
+
+Sub RangeDisable(rng As Range)
+    With rng.Font
+        .ThemeColor = xlThemeColorDark1
+        .TintAndShade = -0.35
+    End With
+End Sub
+
+
 Private Sub Worksheet_Change(ByVal Target As Range)
     Dim wWorkbook As Workbook
-    Dim filename As String
+    Dim auxstring As String
     Dim cellRef As Range
     Dim WSheet As Worksheet
     Dim x, x1 As Integer
 
-    If Target.Column = 2 Or Target.Column = 3 Then
+    If Target.Column = cfgColOriginal Or Target.Column = cfgColRevision Then
         ' All the other columns are ignored.
-        If Target.Row = 2 Then
-            ' This is the filename that was changed
-            filename = Target.Text
-            'If filename is set by Range ignore
-            If Not Left(ThisWorkbook.ActiveSheet.Cells(4, Target.Column).Formula, 1) = "=" Then
+        If Target.Row = cfgRowFilename Then
+            ' This is the auxstring that was changed
+            auxstring = Target.Text
+            'If auxstring is set by Range ignore
+            If Not Left(ThisWorkbook.Sheets("Config").Cells(cfgRowRange, Target.Column).Formula, 1) = "=" Then
             ' Set the variable that will be passed as pointer
-                Set cellRef = ThisWorkbook.ActiveSheet.Cells(3, Target.Column)
+                Set cellRef = ThisWorkbook.Sheets("Config").Cells(cfgRowSheet, Target.Column)
                 'Open the workbook
-                Set wWorkbook = GetWorkbook(filename)
-                ' Not showng the opened workbook
-                'wWorkbook.Worksheets.Visible = False
+                Set wWorkbook = GetWorkbookConfig(Target.Column)
                 If Not wWorkbook Is Nothing Then
+                    With ThisWorkbook.Sheets("Config").Cells(cfgRowFilename, Target.Column)
+                        If Not (.comment Is Nothing) Then
+                            .comment.Delete
+                        End If
+                        .AddComment wWorkbook.FullName
+                    End With
+                    ' Not showng the opened workbook
+                    'wWorkbook.Worksheets.Visible = False
+
                     ' Update the available sheets in the combobox in the validation
                     Call Reload_Sheets(wWorkbook, cellRef)
                 End If
-                Exit Sub
             End If
+            Exit Sub
         End If
-        If Target.Row = 3 Then
+        If Target.Row = cfgRowSheet Then
             ' If the sheet was set by the range ignore
-            If Not Left(ThisWorkbook.ActiveSheet.Cells(4, Target.Column).Formula, 1) = "=" Then
-                If ThisWorkbook.ActiveSheet.Cells(Target.Row, Target.Column).Text = "[ALL]" Then
-                    ThisWorkbook.ActiveSheet.Cells(4, Target.Column) = "Auto Detect"
+            If Not Left(ThisWorkbook.Sheets("Config").Cells(cfgRowRange, Target.Column).Formula, 1) = "=" Then
+                If Target.Text = "[ALL]" Then
+                    ThisWorkbook.Sheets("Config").Cells(cfgRowRange, Target.Column) = "Auto Detect"
                 Else
                     ' This is the Sheet that changed
-                    filename = ThisWorkbook.ActiveSheet.Cells(2, Target.Column)
-                    Set wWorkbook = GetWorkbook(filename)
+                    Set wWorkbook = GetWorkbookConfig(Target.Column)
                     If IsInWorkbook(Target.Value, wWorkbook) Then
                         ' Obtain The Sheet and detect area to compare
                         Set WSheet = wWorkbook.Sheets(Target.Value)
-                        ThisWorkbook.ActiveSheet.Cells(4, Target.Column) = Detect_Table(WSheet)
+                        auxstring = Detect_Table(WSheet)
+                        ThisWorkbook.Sheets("Config").Cells(cfgRowRange, Target.Column) = auxstring
                     End If
                 End If
-                Exit Sub
             End If
+            Exit Sub
         End If
-        If Target.Row = 4 Then
-            If Left(ThisWorkbook.ActiveSheet.Cells(4, Target.Column).Formula, 1) = "=" Then
-                x = InStr(1, ThisWorkbook.ActiveSheet.Cells(4, Target.Column).Formula, "!")
+        If Target.Row = cfgRowRange Then
+            If Left(ThisWorkbook.Sheets("Config").Cells(cfgRowRange, Target.Column).Formula, 1) = "=" Then
+                x = InStr(1, ThisWorkbook.Sheets("Config").Cells(cfgRowRange, Target.Column).Formula, "!")
                 If x > 0 Then
-                    filename = Left(ThisWorkbook.ActiveSheet.Cells(4, Target.Column).Formula, x - 1)
-                    x1 = InStr(1, filename, "]")
-                    If x1 > 0 Then
-                        ThisWorkbook.ActiveSheet.Cells(3, Target.Column) = Mid(filename, x1 + 1, 1000)
-                        ThisWorkbook.ActiveSheet.Cells(2, Target.Column) = Mid(filename, 3, x1 - 3)
+                    auxstring = Left(ThisWorkbook.Sheets("Config").Cells(cfgRowRange, Target.Column).Formula, x - 1)
+                    If Left(auxstring, 3) = "='[" Then
+                        auxstring = Mid(auxstring, 4, Len(auxstring) - 4)
                     Else
-                        ThisWorkbook.ActiveSheet.Cells(3, Target.Column) = Mid(filename, 2, 1000)
+                        If Left(auxstring, 2) = "=[" Then
+                            auxstring = Mid(auxstring, 3, Len(auxstring) - 2)
+                        Else
+                            ThisWorkbook.Sheets("Config").Cells(cfgRowTableHeaders, cfgColOption) = "" ' Inserted/Deleted rows
+                            Exit Sub
+                        End If
                     End If
-                    ThisWorkbook.ActiveSheet.Cells(4, Target.Column) = Mid(ThisWorkbook.ActiveSheet.Cells(4, Target.Column).Formula, x + 1, 1000)
+                    x1 = InStr(1, auxstring, "]")
+                    If x1 > 0 Then
+                        ThisWorkbook.Sheets("Config").Cells(cfgRowSheet, Target.Column) = Mid(auxstring, x1 + 1, 1000)
+                        ThisWorkbook.Sheets("Config").Cells(cfgRowFilename, Target.Column) = Mid(auxstring, 1, x1 - 1)
+                    Else
+                        ThisWorkbook.Sheets("Config").Cells(cfgRowSheet, Target.Column) = Mid(auxstring, 2, 1000)
+                    End If
+                    ThisWorkbook.Sheets("Config").Cells(cfgRowRange, Target.Column) = Mid(ThisWorkbook.Sheets("Config").Cells(cfgRowRange, Target.Column).Formula, x + 1, 1000)
                 Else
-                    ThisWorkbook.ActiveSheet.Cells(4, Target.Column) = Mid(ThisWorkbook.ActiveSheet.Cells(4, Target.Column).Formula, 2, 1000)
+                    ThisWorkbook.Sheets("Config").Cells(cfgRowRange, Target.Column) = Mid(ThisWorkbook.Sheets("Config").Cells(cfgRowRange, Target.Column).Formula, 2, 1000)
                 End If
-                Exit Sub
             End If
+            'Update the remaining fields
+            If Target.Value = "Auto Detect" Then
+                ThisWorkbook.Sheets("Config").Cells(cfgRowTableHeaders, 2) = "NO" ' Table has headers = No
+            End If
+            'In any case force the reload of the Column names
+            Call ReloadColumnNames(Target.Column)
+            Exit Sub
         End If
-        If Target.Row = 6 And Target.Column = 2 Then
+        If Target.Row = cfgRowWhat And Target.Column = cfgColOption Then ' What to compare
             If StrComp(Target.Value, "Formulas", vbTextCompare) = 0 Then
-                ThisWorkbook.ActiveSheet.Cells(13, 2) = "NO"
-                With ThisWorkbook.ActiveSheet.Range("A7:B7").Font
-                    .ColorIndex = xlAutomatic
-                    .TintAndShade = 0
-                End With
+                ThisWorkbook.Sheets("Config").Cells(cfgRowAnnoMergeText, cfgColOption) = "NO"
+                Call RangeEnable(ThisWorkbook.Sheets("Config").Range("A7:B7"))
             Else
-                With ThisWorkbook.ActiveSheet.Range("A7:B7").Font
-                    .ThemeColor = xlThemeColorDark1
-                    .TintAndShade = -0.35
-                End With
+                Call RangeDisable(ThisWorkbook.Sheets("Config").Range("A7:B7"))
             End If
             Exit Sub
         End If
-        If Target.Row = 13 And Target.Column = 2 Then
+        
+        If Target.Row = cfgRowTableHeaders Then ' Table has headers
+            If Target.Column = cfgColOption Then
+                If StrComp(Target.Value, "YES", vbTextCompare) = 0 Then
+                    ' Fist validate if multiple sheets is programmed
+                    If ThisWorkbook.Sheets("Config").Cells(cfgRowSheet, cfgColOriginal) = "[ALL]" And _
+                       ThisWorkbook.Sheets("Config").Cells(cfgRowSheet, cfgColRevision) = "[ALL]" Then
+                        ThisWorkbook.Sheets("Config").Cells(cfgRowTableHeaders, cfgColOption) = "NO"
+                        MsgBox "This option is not allowed with multiple sheet compare", vbOKOnly
+                    Else
+                        Call RangeEnable(Target.Worksheet.Range("A10:C10"))
+                        If ThisWorkbook.Sheets("Config").Cells(cfgRowRange, cfgColOriginal) <> "Auto Detect" Then
+                            auxstring = Str(DetectHeaderRow(cfgColOriginal))
+                            ThisWorkbook.Sheets("Config").Cells(cfgRowHeaderRow, cfgColOriginal) = auxstring
+                        End If
+                        If ThisWorkbook.Sheets("Config").Cells(cfgRowRange, cfgColRevision) <> "Auto Detect" Then
+                            auxstring = Str(DetectHeaderRow(cfgColRevision))
+                            ThisWorkbook.Sheets("Config").Cells(, cfgColRevision) = auxstring
+                        End If
+                    End If
+                Else
+                    Call RangeDisable(Target.Worksheet.Range("A10:C10"))
+                End If
+                Call ReloadColumnNames(cfgColOriginal)
+                Call ReloadColumnNames(cfgColRevision)
+            End If
+            Exit Sub
+        End If
+        
+        If Target.Row = cfgRowHeaderRow Then
+            Call ReloadColumnNames(Target.Column)
+            Exit Sub
+        End If
+
+        If Target.Row = cfgRowAnnoMergeText And Target.Column = cfgColOption Then ' Merge Text Cells
             If StrComp(Target.Value, "YES", vbTextCompare) = 0 And _
-                StrComp(ThisWorkbook.ActiveSheet.Cells(6, 2), "Formulas") = 0 Then
+                StrComp(ThisWorkbook.Sheets("Config").Cells(cfgRowWhat, cfgColOption), "Formulas") = 0 Then
                 MsgBox "This is not supported when comparing Formulas"
-                ThisWorkbook.ActiveSheet.Cells(13, 2) = "NO"
+                ThisWorkbook.Sheets("Config").Cells(cfgRowAnnoMergeText, cfgColOption) = "NO" 'Merge Text Cells = No
             End If
             Exit Sub
         End If
-        If Target.Row = 9 And Target.Column = 2 Then
+        
+        If Target.Row = cfgRowPrimaryKey And Target.Column = cfgColOption Then
+            If Target.Value = "NO" Then
+                Call RangeDisable(ThisWorkbook.Sheets("Config").Range("A12:C12"))
+            Else
+                Call RangeEnable(ThisWorkbook.Sheets("Config").Range("A12:C12"))
+            End If
+            Exit Sub
+        End If
+
+        If Target.Row = cfgRowAnnotate And Target.Column = cfgColOption Then ' Make anotations on
             If Target.Value = "None" Then
-                With ThisWorkbook.ActiveSheet.Range("A10:A15,B10,B12:B15").Font
-                    .ThemeColor = xlThemeColorDark1
-                    .TintAndShade = -0.35
-                End With
+                Call RangeDisable(ThisWorkbook.Sheets("Config").Range("A15:A20,B15,B17:B20"))
             Else
-                With ThisWorkbook.ActiveSheet.Range("A10:A15,B10,B12:B15").Font
-                    .ColorIndex = xlAutomatic
-                    .TintAndShade = 0
-                End With
+                Call RangeEnable(ThisWorkbook.Sheets("Config").Range("A15:A20,B15,B17:B20"))
             End If
             Exit Sub
         End If
-        If Target.Row = 17 And Target.Column = 2 Then
+        If Target.Row = cfgRowReport And Target.Column = cfgColOption Then ' Create Report
             If Target.Value = "YES" Then
-                With ThisWorkbook.ActiveSheet.Range("A18:B18").Font
-                    .ColorIndex = xlAutomatic
-                    .TintAndShade = 0
-                End With
+                RangeEnable (ThisWorkbook.Sheets("Config").Range("A23:B23"))
             Else
-                With ThisWorkbook.ActiveSheet.Range("A18:B18").Font
-                    .ThemeColor = xlThemeColorDark1
-                    .TintAndShade = -0.35
-                End With
+                RangeDisable (ThisWorkbook.Sheets("Config").Range("A23:B23"))
             End If
         End If
     End If
