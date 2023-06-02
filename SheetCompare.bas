@@ -1,4 +1,10 @@
 Attribute VB_Name = "SheetCompare"
+' Sheet Order Definition
+Public Const sheetConfig = 1
+Public Const sheetDiff = 2
+Public Const sheetLanguage = 3
+
+' Config Sheet constants
 Public Const cfgColOriginal = 2
 Public Const cfgColRevision = 3
 Public Const cfgColOption = 2
@@ -22,12 +28,16 @@ Public Const cfgRowAnnoMarkColumn As Long = 20
 Public Const cfgRowReport As Long = 22
 Public Const cfgRowRepWithMerge As Long = 23
 
-Public Const logRowOptions = 1
-Public Const logColSyncNavigation = 1
-Public Const logColUpdateSheets = 4
+Public Const cfgRowLanguage As Long = 28
+Public Const cfgColLanguage = 2
 
+' Log sheet Constants
+Public Const logRowSyncNavigation = 1
+Public Const logColSyncNavigation = 8
+Public Const logRowUpdateSheets = 2
+Public Const logColUpdateSheets = 8
 
-Public Const logRowHeader = 2
+Public Const logRowHeader = 3
 
 Public Const logColSyncOriSheet = 1
 Public Const logColSyncOriRow = 2
@@ -38,12 +48,42 @@ Public Const logColSyncRevCol = 6
 Public Const logColSyncOriValue = 7
 Public Const logColSyncRevValue = 8
 
+'Merge text constants
 Public Const tokenCompareDifferent = -1
 Public Const tokenCompareNoComparison = 0
 Public Const tokenCompareEqual = 1
 Public Const tokenCompareSlightDifferent = 2
 
 
+' The Language rows definition
+Public Const rowYes = 2
+Public Const rowNo = 3
+Public Const rowAll = 4
+Public Const rowAutodetect = 5
+Public Const rowButtonSelectOriginal = 6
+Public Const rowButtonSelectRevised = 7
+Public Const rowButtonCompare = 8
+Public Const rowButtonReset = 9
+Public Const rowSheetConfig = 10
+Public Const rowSheetDiff = 11
+Public Const rowOriginalSheet = 12
+Public Const rowRevisedSheet = 13
+Public Const rowDiffZoom = 14
+Public Const rowDiffUpdate = 15
+Public Const rowMessageMissingFile = 16
+Public Const rowMessageMissingPrimKey = 17
+Public Const rowMessageFinished = 18
+Public Const rowMessageProgress = 19
+Public Const rowForConfigA2 = 20
+Public Const rowOptionValues = 30
+Public Const rowOptionFormulas = 31
+Public Const rowOptionNone = 49
+Public Const rowOptionOriginal = 50
+Public Const rowOptionRevision = 51
+
+' usual language definitions
+Public OptionYes, OptionNo, OptionAutoDetect, ALLSheets As String
+Public colLanguage As Integer
 
 Option Explicit
 
@@ -58,6 +98,46 @@ Function ColNumber(col As String) As Integer
         ColNumber = Range(col + "1").Column
     End If
 End Function
+
+Function GetObject(wrkSheet As Variant, Name As String) As Variant
+    Dim Obj As Variant
+    Set GetObject = Nothing
+    For Each Obj In wrkSheet.Shapes
+        If Obj.Name = Name Then
+            Set GetObject = Obj
+            Exit For
+        End If
+    Next Obj
+End Function
+
+Sub InitConfigStrings()
+    Dim langSheet As Worksheet
+    Dim SelectedLanguage As String
+    
+    Dim i As Integer
+    SelectedLanguage = ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowLanguage, cfgColLanguage).Text
+    Set langSheet = ThisWorkbook.Sheets(sheetLanguage)
+    i = 2
+    Do While True
+        If langSheet.Cells(1, i) = SelectedLanguage Then
+            colLanguage = i
+            OptionYes = ThisWorkbook.Sheets(sheetLanguage).Cells(rowYes, colLanguage)
+            OptionNo = ThisWorkbook.Sheets(sheetLanguage).Cells(rowNo, colLanguage)
+            OptionAutoDetect = ThisWorkbook.Sheets(sheetLanguage).Cells(rowAutodetect, colLanguage)
+            ALLSheets = "[" & ThisWorkbook.Sheets(sheetLanguage).Cells(rowAll, colLanguage) & "]"
+            Exit Do
+        End If
+        If langSheet.Cells(1, i) = "" Then
+            ' Panic!!!! Use the default Settings. This code should never be executed in normal circumstances
+            OptionYes = ThisWorkbook.Sheets(sheetLanguage).Cells(rowYes, 2)
+            OptionNo = ThisWorkbook.Sheets(sheetLanguage).Cells(rowNo, 2)
+            OptionAutoDetect = ThisWorkbook.Sheets(sheetLanguage).Cells(rowAutodetect, 2)
+            ALLSheets = "[" & ThisWorkbook.Sheets(sheetLanguage).Cells(rowAll, 2) & "]"
+            Exit Do
+        End If
+        i = i + 1
+    Loop
+End Sub
 
 Sub SetValidation(cell As Range, list As String, ERROR As String, information As String, ignoreBlank As Boolean)
     Dim bShowInfo, bShowError As Boolean
@@ -94,84 +174,135 @@ End Sub
 
 ' This resets everything to default values
 Sub ResetFields()
-    With ThisWorkbook.Sheets("Config")
+    Dim langSheet, CfgSheet As Worksheet
+    Dim row As Integer
+    Dim P, P1, P2 As Variant
+    Dim Ref, arg1, arg2, Options As String
+    Dim Obj As Variant
+    Call fillLanguagesCombo
+    Call InitConfigStrings
+    
+    Set langSheet = ThisWorkbook.Sheets(sheetLanguage)
+    Set CfgSheet = ThisWorkbook.Sheets(sheetConfig)
+    Options = ""
+    
+    With ThisWorkbook.Sheets(sheetConfig)
+        row = rowForConfigA2
+        Do While langSheet.Cells(row, 1).Text <> ""
+            Ref = langSheet.Cells(row, 1).Text
+            P = InStr(1, Ref, " ", vbTextCompare)
+            If P > 0 Then
+                'It contains a hint or a validation
+                P1 = InStr(P + 1, Ref, " ", vbTextCompare)
+                If P1 = 0 Then
+                    P1 = Len(Ref) + 1
+                    arg2 = ""
+                Else
+                    arg2 = Mid(Ref, P1 + 1, Len(Ref) - P1)
+                End If
+                arg1 = Mid(Ref, P + 1, P1 - P - 1)
+                Ref = Left(Ref, P - 1)
+                
+                If arg1 = "Hint" Then
+                    Call SetValidation(.Range(Ref), "", "", langSheet.Cells(row, colLanguage).Text, True)
+                Else
+                    If arg1 = "YesNo" Then  ' This handles the Yes/No Condition
+                        '.Range(Ref).Text = OptionNo
+                        Call SetValidation(.Range(Ref), OptionYes & "," & OptionNo, "", _
+                        langSheet.Cells(row, colLanguage).Text, False)
+                    Else ' This is all the other Option based conditions
+                        If arg1 = "Option" Then
+                            If Options = "" Then
+                                Options = langSheet.Cells(row, colLanguage).Text
+                            Else
+                                If arg2 <> "Info" Then
+                                    Options = Options & "," & langSheet.Cells(row, colLanguage).Text
+                                Else
+                                    Call SetValidation(.Range(Ref), Options, "", langSheet.Cells(row, colLanguage).Text, False)
+                                    Options = ""
+                                End If
+                            End If
+                        Else
+                            If arg1 = "Format" Then
+                                .Range(Ref) = langSheet.Cells(row, colLanguage).Text
+                                For P = 1 To Len(.Range(Ref).Text)
+                                    If langSheet.Cells(row, colLanguage).Characters(Start:=P, length:=1).Font.Underline <> xlUnderlineStyleNone Then
+                                         .Range(Ref).Characters(Start:=P, length:=1).Font.Underline = xlUnderlineStyleSingle
+                                    End If
+                                    If langSheet.Cells(row, colLanguage).Characters(Start:=P, length:=1).Font.Strikethrough Then
+                                        .Range(Ref).Characters(Start:=P, length:=1).Font.Strikethrough = True
+                                    End If
+                                Next P
+                            End If
+                        End If
+                    End If
+                End If
+            Else
+                .Range(Ref) = langSheet.Cells(row, colLanguage).Text
+            End If
+            row = row + 1
+        Loop
         
         If Not (.Cells(cfgRowFilename, cfgColOriginal).comment Is Nothing) Then
             .Cells(cfgRowFilename, cfgColOriginal).comment.Delete
         End If
-        .Cells(cfgRowFilename, cfgColOriginal) = "Original WorkBook"
+        '.Cells(cfgRowFilename, cfgColOriginal) = "Original WorkBook"
         
         If Not (.Cells(cfgRowFilename, cfgColRevision).comment Is Nothing) Then
             .Cells(cfgRowFilename, cfgColRevision).comment.Delete
         End If
-        .Cells(cfgRowFilename, cfgColRevision) = "Revisioned WorkBook"
+        '.Cells(cfgRowFilename, cfgColRevision) = "Revisioned WorkBook"
         
-        .Cells(cfgRowSheet, cfgColOriginal) = "[ALL]"
-        .Cells(cfgRowSheet, cfgColRevision) = "[ALL]"
-        .Cells(cfgRowRange, cfgColOriginal) = "Auto Detect"
-        .Cells(cfgRowRange, cfgColRevision) = "Auto Detect"
+        .Cells(cfgRowSheet, cfgColOriginal) = ALLSheets
+        .Cells(cfgRowSheet, cfgColRevision) = ALLSheets
+        .Cells(cfgRowRange, cfgColOriginal) = OptionAutoDetect
+        .Cells(cfgRowRange, cfgColRevision) = OptionAutoDetect
         
-        .Cells(cfgRowWhat, cfgColOption) = "Values"
-        Call SetValidation(.Cells(cfgRowWhat, cfgColOption), "Values,Formulas", "", _
-        "Select Formulas if to compare the formulas instead of Values", False)
-        
-        .Cells(cfgRowR1C1, cfgColOption) = "NO"
-        Call SetValidation(.Cells(cfgRowR1C1, cfgColOption), "YES,NO", "", _
-        "If Formulas are being compared, select YES if to use the relative reference format.", False)
-        
-        .Cells(cfgRowTableHeaders, cfgColOption) = "NO"
-        Call SetValidation(.Cells(cfgRowTableHeaders, cfgColOption), "YES,NO", "", _
-        "Select YES if the Table contains Rows", False)
-        
+        .Cells(cfgRowWhat, cfgColOption) = langSheet.Cells(rowOptionValues, colLanguage)
+        .Cells(cfgRowR1C1, cfgColOption) = OptionNo
+        .Cells(cfgRowTableHeaders, cfgColOption) = OptionNo
         .Cells(cfgRowHeaderRow, cfgColOriginal) = "1"
         .Cells(cfgRowHeaderRow, cfgColRevision) = "1"
         
-        .Cells(cfgRowPrimaryKey, cfgColOption) = "NO"
-        Call SetValidation(.Cells(cfgRowPrimaryKey, cfgColOption), "YES,NO", "", _
-        "Select YES if the table to compare has a primary key for matching corresponding lines.", False)
-        
+        .Cells(cfgRowPrimaryKey, cfgColOption) = OptionNo
         .Cells(cfgRowPrimKeyCol, cfgColOriginal) = ""
         .Cells(cfgRowPrimKeyCol, cfgColRevision) = ""
         
-        .Cells(cfgRowAnnotate, cfgColOption) = "None"
-        Call SetValidation(.Cells(cfgRowAnnotate, cfgColOption), "None,Original,Revision", "", _
-        "Choose if annotations are to be added to the Original or Revisioned Sheet. Default is None.", False)
-        
-        .Cells(cfgRowAnnoUseFormat, cfgColOption) = "YES"
-        Call SetValidation(.Cells(cfgRowAnnoUseFormat, cfgColOption), "YES,NO", "", _
-        "If Annotation is not None, use this field to specify if to use format in cell annotations.", False)
-        
-        .Cells(cfgRowAnnoCellFormat, cfgColOption) = "This is a changed Cell"
-        
-        .Cells(cfgRowAnnoComments, cfgColOption) = "NO"
-        Call SetValidation(.Cells(cfgRowAnnoComments, cfgColOption), "YES,NO", "", _
-        "", False)
-        
-        .Cells(cfgRowAnnoMergeText, cfgColOption) = "NO"
-        Call SetValidation(.Cells(cfgRowAnnoMergeText, cfgColOption), "YES,NO", "", _
-        "", False)
-        .Cells(cfgRowAnnoMark, cfgColOption) = "NO"
-        Call SetValidation(.Cells(cfgRowAnnoMark, cfgColOption), "YES,NO", "", _
-        "", False)
+        .Cells(cfgRowAnnotate, cfgColOption) = langSheet.Cells(rowOptionNone, colLanguage)
+        .Cells(cfgRowAnnoUseFormat, cfgColOption) = OptionYes
+        .Cells(cfgRowAnnoComments, cfgColOption) = OptionNo
+        .Cells(cfgRowAnnoMergeText, cfgColOption) = OptionNo
+        .Cells(cfgRowAnnoMark, cfgColOption) = OptionNo
         .Cells(cfgRowAnnoMarkColumn, cfgColOption) = "AA"
-        .Cells(cfgRowReport, cfgColOption) = "NO"
-        Call SetValidation(.Cells(cfgRowReport, cfgColOption), "YES,NO", "", _
-        "", False)
-        .Cells(cfgRowRepWithMerge, cfgColOption) = "NO"
-        Call SetValidation(.Cells(cfgRowRepWithMerge, cfgColOption), "YES,NO", "", _
-        "", False)
-        
+        .Cells(cfgRowReport, cfgColOption) = OptionNo
+        .Cells(cfgRowRepWithMerge, cfgColOption) = OptionNo
     End With
-    
+    CfgSheet.Buttons(1).Caption = langSheet.Cells(rowButtonSelectOriginal, colLanguage).Text ' Select Original
+    CfgSheet.Buttons(2).Caption = langSheet.Cells(rowButtonSelectRevised, colLanguage).Text ' Select Revised
+    CfgSheet.Buttons(3).Caption = langSheet.Cells(rowButtonCompare, colLanguage).Text ' Compare Sheets
+    CfgSheet.Buttons(4).Caption = langSheet.Cells(rowButtonReset, colLanguage).Text ' Reset
+    CfgSheet.Name = ThisWorkbook.Sheets(sheetLanguage).Cells(rowSheetConfig, colLanguage)
+    ThisWorkbook.Sheets(sheetDiff).Name = ThisWorkbook.Sheets(sheetLanguage).Cells(rowSheetDiff, colLanguage)
     Call Sheet2.ResetSheet
 
 End Sub
 
+Public Function FormatMessage(ByVal message As String, ParamArray Args()) As String
+    Dim i           As Integer
+    Dim strRetVal   As String
+    strRetVal = message
+    
+    For i = LBound(Args) To UBound(Args)
+        strRetVal = Replace(strRetVal, "<" & CStr(i + 1) & ">", Args(i))
+    Next i
+    FormatMessage = strRetVal
+End Function
+
 Sub set_YES_NO(ByRef cell As Range, ByVal b As Boolean)
     If b Then
-        cell = "YES"
+        cell = OptionYes
     Else
-        cell = "NO"
+        cell = OptionNo
     End If
 End Sub
 
@@ -184,7 +315,7 @@ Function SelectFileWindows() As String
     With fDialog
         .Filters.Clear
         .Filters.Add "Excel files (*.xls?)", "*.xls?"
-        .title = "Select Excel File to Compare"
+        .Title = "Select Excel File to Compare"
         
         If .Show = True Then
             SelectFileWindows = .SelectedItems.Item(1)
@@ -258,8 +389,8 @@ Sub RefreshWorkbooks()
             End If
         End If
     Next wrkbk
-    Call SetValidation(ThisWorkbook.Worksheets("Config").Cells(cfgRowFilename, cfgColOriginal), list, "", "", False)
-    Call SetValidation(ThisWorkbook.Worksheets("Config").Cells(cfgRowFilename, cfgColRevision), list, "", "", False)
+    Call SetValidation(ThisWorkbook.Worksheets(sheetConfig).Cells(cfgRowFilename, cfgColOriginal), list, "", "", False)
+    Call SetValidation(ThisWorkbook.Worksheets(sheetConfig).Cells(cfgRowFilename, cfgColRevision), list, "", "", False)
 End Sub
 
 Function GetWorkbook(filename As String) As Workbook
@@ -297,7 +428,7 @@ Function GetWorkbookConfig(col As Integer) As Workbook
     Dim FileCell As Range
 
     On Error GoTo Error_Opening_File
-    Set FileCell = ThisWorkbook.Sheets("Config").Cells(cfgRowFilename, col)
+    Set FileCell = ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowFilename, col)
     
     Set GetWorkbookConfig = GetWorkbook(FileCell.Text)
 
@@ -338,10 +469,10 @@ Sub Reload_Sheets(wbk As Workbook, cell As Range)
             
     If MATCHED = False Then
         If wbk.Worksheets.count > 1 Then
-            cell.Value = "[ALL]"
+            cell.Value = ALLSheets
         Else
             'This is shit, but it didn't work any other way
-            ' wbk.WorkSheets("Config").Name always gave an error
+            ' wbk.WorkSheets(sheetConfig).Name always gave an error
             For Each sheet In wbk.Worksheets
                 list = sheet.Name
                 Exit For
@@ -363,12 +494,12 @@ Function TargetSheetRange(col As Integer) As Range
     Set TargetSheetRange = Nothing
     
     Set wWorkbook = GetWorkbookConfig(col)
-    sheetname = ThisWorkbook.Sheets("Config").Cells(cfgRowSheet, col)
-    If sheetname <> "[ALL]" And IsInWorkbook(sheetname, wWorkbook) Then
+    sheetname = ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowSheet, col)
+    If sheetname <> ALLSheets And IsInWorkbook(sheetname, wWorkbook) Then
         ' Obtain The Sheet
         Set WSheet = wWorkbook.Sheets(sheetname)
         'For now assuming the first row of the range to compare
-        auxstring = ThisWorkbook.Sheets("Config").Cells(cfgRowRange, col).Text
+        auxstring = ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, col).Text
         Set TargetSheetRange = WSheet.Range(auxstring)
     End If
     Exit Function
@@ -382,7 +513,7 @@ Function DetectHeaderRow(col As Integer) As Long
     
     Set rng = TargetSheetRange(col)
     If Not rng Is Nothing Then
-        DetectHeaderRow = rng.Row
+        DetectHeaderRow = rng.row
     Else
         DetectHeaderRow = 1
     End If
@@ -398,8 +529,8 @@ Function FindPrimaryKey(sheet As Worksheet, col As Integer) As Long
     FindPrimaryKey = 0
     On Error GoTo FindPrimaryKeyEnd
 
-    headerRow = Int(ThisWorkbook.Sheets("Config").Cells(cfgRowHeaderRow, col).Value)
-    Key = ThisWorkbook.Sheets("Config").Cells(cfgRowPrimKeyCol, col).Text
+    headerRow = Int(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowHeaderRow, col).Value)
+    Key = ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowPrimKeyCol, col).Text
     
     For Each cell In sheet.Rows(headerRow).Cells()
         If Not IsEmpty(cell) And cell.Text = Key Then
@@ -430,9 +561,9 @@ Sub ReloadColumnNames(col As Integer)
             
     On Error GoTo ERROR
         
-    If ThisWorkbook.Sheets("Config").Cells(cfgRowTableHeaders, cfgColOption) = "YES" Then
+    If ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowTableHeaders, cfgColOption) = OptionYes Then
         ' Will populate the list with column names
-        headerRow = Int(ThisWorkbook.Sheets("Config").Cells(cfgRowHeaderRow, col).Value)
+        headerRow = Int(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowHeaderRow, col).Value)
        
         If Not rng Is Nothing Then
             For Each cell In rng.Worksheet.Rows(headerRow).Cells()
@@ -444,17 +575,17 @@ Sub ReloadColumnNames(col As Integer)
                     Else
                         auxstring = auxstring + "," + cell.Text
                     End If
-                    If cell.Text = ThisWorkbook.Sheets("Config").Cells(cfgRowPrimKeyCol, col).Text Then
+                    If cell.Text = ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowPrimKeyCol, col).Text Then
                         match = True
                     End If
                 End If
-                If cell.Row > headerRow Then Exit For ' Stop condition
+                If cell.row > headerRow Then Exit For ' Stop condition
             Next cell
         
         End If
     Else
         For Each cell In rng
-            If cell.Row = rng.Row Then ' only cycle the first row
+            If cell.row = rng.row Then ' only cycle the first row
                 colstring = "Column " + ColStr(cell.Column)
                 If firstElement Then
                     auxstring = colstring
@@ -463,7 +594,7 @@ Sub ReloadColumnNames(col As Integer)
                 Else
                     auxstring = auxstring + "," + colstring
                 End If
-                If colstring = ThisWorkbook.Sheets("Config").Cells(cfgRowPrimKeyCol, col).Text Then
+                If colstring = ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowPrimKeyCol, col).Text Then
                     match = True
                 End If
             Else
@@ -472,11 +603,11 @@ Sub ReloadColumnNames(col As Integer)
         Next cell
     End If
     
-    Call SetValidation(ThisWorkbook.Sheets("Config").Cells(cfgRowPrimKeyCol, col), _
+    Call SetValidation(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowPrimKeyCol, col), _
         auxstring, _
         "", "", True)
     If Not match Then
-        ThisWorkbook.Sheets("Config").Cells(cfgRowPrimKeyCol, col) = firstValidField
+        ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowPrimKeyCol, col) = firstValidField
     End If
     
 ERROR:
@@ -559,12 +690,14 @@ End Sub
 
 Function IsInWorkbook(sheetToBeFound As String, wbk As Workbook) As Boolean
     Dim sheet As Variant
+    On Error GoTo SheetNotFound
     For Each sheet In wbk.Worksheets
         If sheetToBeFound = sheet.Name Then
             IsInWorkbook = True
             Exit Function
         End If
     Next
+SheetNotFound:
     IsInWorkbook = False
 End Function
 
@@ -575,24 +708,28 @@ Function ColumnMatch(OriSheet As Worksheet, OriRange As String, RevSheet As Work
     Dim OCell, RCell As Range
     Dim OHeaderRow As Long, RHeaderRow As Long
     Dim OColumns, RColumns As Long
-    Dim auxRange As Range
+    Dim OStart, RStart As Long
+    Dim ORange, RRange As Range
 
     count = 0
         
-    OHeaderRow = ThisWorkbook.Sheets("Config").Cells(cfgRowHeaderRow, cfgColOriginal)
-    RHeaderRow = ThisWorkbook.Sheets("Config").Cells(cfgRowHeaderRow, cfgColRevision)
+    OHeaderRow = ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowHeaderRow, cfgColOriginal)
+    RHeaderRow = ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowHeaderRow, cfgColRevision)
     
-    Set auxRange = Range(OriRange)
-    OColumns = auxRange.Columns.count + auxRange.Column
-    Set auxRange = Range(RevRange)
-    RColumns = auxRange.Columns.count + auxRange.Column
+    Set ORange = Range(OriRange)
+    OStart = ORange.Column
+    OColumns = ORange.Columns.count + OStart
+    
+    Set RRange = Range(RevRange)
+    RStart = RRange.Column
+    RColumns = RRange.Columns.count + RStart
     
     For Each OCell In OriSheet.Rows(OHeaderRow).Cells
         If OCell.Column > OColumns Then Exit For
-        If Len(OCell.Text) > 0 Then
+        If (OCell.Column >= OStart) And (Len(OCell.Text) > 0) Then
             For Each RCell In RevSheet.Rows(RHeaderRow).Cells
                 If OCell.Column > RColumns Then Exit For
-                If OCell.Text = RCell.Text Then
+                If (RCell.Column >= RStart) And (OCell.Text = RCell.Text) Then
                     ' TODO: Also control that the Revisioned column wasn't already added
                     count = count + 1
                     ReDim Preserve OriCols(count)
@@ -667,34 +804,37 @@ Sub Compare_Excel_Files_WorkSheets()
 
     Dim iDiffCount As Double
     
-    Set Cfg_Sheet = ThisWorkbook.Sheets("Config")
+    Set Cfg_Sheet = ThisWorkbook.Sheets(sheetConfig)
+    Call InitConfigStrings
     'Assign the Workbook File Name along with its Path
     Set Ori_Workbook = GetWorkbookConfig(cfgColOriginal) ' OriginalWorkbook Filename
     Set Rev_Workbook = GetWorkbookConfig(cfgColRevision) ' Revision Workbook Filename
     
     If Ori_Workbook Is Nothing Then
-        ' Try using the full path on comment
-        
-        MsgBox "File """ & Cfg_Sheet.Cells(cfgRowFilename, cfgColOriginal) & """ doesn't exist"
+        MsgBox FormatMessage(ThisWorkbook.Sheets(sheetLanguage).Cells(rowMessageMissingFile, colLanguage).Text, _
+        Cfg_Sheet.Cells(cfgRowFilename, cfgColOriginal))
         Exit Sub
     End If
 
     If Rev_Workbook Is Nothing Then
-        MsgBox "File """ & Cfg_Sheet.Cells(cfgRowFilename, cfgColRevision) & """ doesn't exist"
+        MsgBox FormatMessage(ThisWorkbook.Sheets(sheetLanguage).Cells(rowMessageMissingFile, colLanguage).Text, _
+        Cfg_Sheet.Cells(cfgRowFilename, cfgColRevision))
         Exit Sub
     End If
     
     
-    bMakeAnnotation = StrComp(Cfg_Sheet.Cells(cfgRowAnnotate, cfgColOption).Value, "None", vbTextCompare) <> 0 ' Make annotation on
+    bMakeAnnotation = StrComp(Cfg_Sheet.Cells(cfgRowAnnotate, cfgColOption).Value, _
+                              ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionNone, colLanguage).Text, _
+                              vbTextCompare) <> 0 ' Make annotation on
     Set ChangedCellFormat = Cfg_Sheet.Cells(cfgRowAnnoCellFormat, cfgColOption) ' Changed Cell Format
     
     If bMakeAnnotation Then
-        bApplyChangeFormat = (StrComp(Cfg_Sheet.Cells(cfgRowAnnoUseFormat, cfgColOption), "YES", vbTextCompare) = 0) ' Use Format to identify changes
-        bInsertComment = (StrComp(Cfg_Sheet.Cells(cfgRowAnnoComments, cfgColOption), "YES", vbTextCompare) = 0)     ' Insert difference in comments
-        bTextMerge = (StrComp(Cfg_Sheet.Cells(cfgRowAnnoMergeText, cfgColOption), "YES", vbTextCompare) = 0) ' Use Merge Text in the differences
+        bApplyChangeFormat = (StrComp(Cfg_Sheet.Cells(cfgRowAnnoUseFormat, cfgColOption), OptionYes, vbTextCompare) = 0) ' Use Format to identify changes
+        bInsertComment = (StrComp(Cfg_Sheet.Cells(cfgRowAnnoComments, cfgColOption), OptionYes, vbTextCompare) = 0)     ' Insert difference in comments
+        bTextMerge = (StrComp(Cfg_Sheet.Cells(cfgRowAnnoMergeText, cfgColOption), OptionYes, vbTextCompare) = 0) ' Use Merge Text in the differences
         
         ' if annotateColumn is zero, the annotation is not done
-        If (StrComp(Cfg_Sheet.Cells(cfgRowAnnoMark, cfgColOption), "YES", vbTextCompare) = 0) Then  ' Mark modified Rows
+        If (StrComp(Cfg_Sheet.Cells(cfgRowAnnoMark, cfgColOption), OptionYes, vbTextCompare) = 0) Then  ' Mark modified Rows
             annotateColumn = ColNumber(Cfg_Sheet.Cells(cfgRowAnnoMarkColumn, cfgColOption).Text)   ' use column
         Else
             annotateColumn = 0
@@ -705,15 +845,15 @@ Sub Compare_Excel_Files_WorkSheets()
     ' This is done here so thata the bTextMerge can be direcly overriden
     If StrComp(Cfg_Sheet.Cells(cfgRowWhat, cfgColOption).Value, "Formulas", vbTextCompare) = 0 Then  ' What to compare
         bCompareFormulas = True
-        bR1C1Format = (StrComp(Cfg_Sheet.Cells(cfgRowR1C1, cfgColOption), "YES", vbTextCompare) = 0)  ' Use R1C1 Format
+        bR1C1Format = (StrComp(Cfg_Sheet.Cells(cfgRowR1C1, cfgColOption), OptionYes, vbTextCompare) = 0)  ' Use R1C1 Format
         bTextMerge = False
     Else
         bCompareFormulas = False
     End If
      
-    bDoReport = (StrComp(Cfg_Sheet.Cells(cfgRowReport, cfgColOption), "YES", vbTextCompare) = 0) ' Create Report
+    bDoReport = (StrComp(Cfg_Sheet.Cells(cfgRowReport, cfgColOption), OptionYes, vbTextCompare) = 0) ' Create Report
     If bDoReport Then
-        bReportMerge = (StrComp(Cfg_Sheet.Cells(cfgRowRepWithMerge, cfgColOption), "YES", vbTextCompare) = 0)  ' Use merge in the Report
+        bReportMerge = (StrComp(Cfg_Sheet.Cells(cfgRowRepWithMerge, cfgColOption), OptionYes, vbTextCompare) = 0)  ' Use merge in the Report
     End If
 
     Application.ScreenUpdating = False
@@ -730,9 +870,9 @@ Sub Compare_Excel_Files_WorkSheets()
     reportedSheets = 0
     comparedSheets = 0
     iDiffCount = 0
-    Set Log_Sheet = ThisWorkbook.Sheets("Diff")
-    bbSyncNavigation = "YES" = Log_Sheet.Cells(logRowOptions, logColSyncNavigation + 1).Value ' Backup Value
-    bbUpdateSheets = "YES" = Log_Sheet.Cells(logRowOptions, logColUpdateSheets + 1).Value ' Backup Value
+    Set Log_Sheet = ThisWorkbook.Sheets(sheetDiff)
+    bbSyncNavigation = OptionYes = Log_Sheet.Cells(logRowSyncNavigation, logColSyncNavigation + 1).Value ' Backup Value
+    bbUpdateSheets = OptionYes = Log_Sheet.Cells(logRowUpdateSheets, logColUpdateSheets + 1).Value ' Backup Value
     ' This blocks the updates due to changes on the Report.
     Call Sheet2.BlockUpdates
     Call Sheet2.ResetSheet
@@ -740,13 +880,13 @@ Sub Compare_Excel_Files_WorkSheets()
     Log_Sheet.Cells(logRowHeader, logColSyncRevValue) = Rev_Workbook.FullName
     bMultipleSheets = False
     
-    bPrimaryKey = Cfg_Sheet.Cells(cfgRowPrimaryKey, cfgColOption).Value = "YES"
-    bHasHeaders = Cfg_Sheet.Cells(cfgRowTableHeaders, cfgColOption).Value = "YES"
+    bPrimaryKey = Cfg_Sheet.Cells(cfgRowPrimaryKey, cfgColOption).Value = OptionYes
+    bHasHeaders = Cfg_Sheet.Cells(cfgRowTableHeaders, cfgColOption).Value = OptionYes
         
     ' Cycling through Sheets
     Do While True
-        If Cfg_Sheet.Cells(cfgRowSheet, cfgColOriginal) = "[ALL]" Then
-            If Cfg_Sheet.Cells(cfgRowSheet, cfgColRevision) = "[ALL]" Then
+        If Cfg_Sheet.Cells(cfgRowSheet, cfgColOriginal) = ALLSheets Then
+            If Cfg_Sheet.Cells(cfgRowSheet, cfgColRevision) = ALLSheets Then
                 bMultipleSheets = True
 TRY_NEXT:
                 If sheetIndex > Ori_Workbook.Sheets.count Then
@@ -779,7 +919,7 @@ TRY_NEXT:
                 GoTo EXIT_LOOP
             End If
         
-            If Cfg_Sheet.Cells(cfgRowSheet, cfgColRevision) = "[ALL]" Then
+            If Cfg_Sheet.Cells(cfgRowSheet, cfgColRevision) = ALLSheets Then
                 If IsInWorkbook(Ori_SheetName, Rev_Workbook) Then
                     Rev_SheetName = Ori_SheetName
                 Else
@@ -799,21 +939,21 @@ TRY_NEXT:
         Ori_Range = Cfg_Sheet.Cells(cfgRowRange, cfgColOriginal) ' Original Range to compare
         Rev_Range = Cfg_Sheet.Cells(cfgRowRange, cfgColRevision) ' Revision Range to compare
     
-        If Ori_Range = "Auto Detect" Then
+        If Ori_Range = OptionAutoDetect Then
             Ori_Range = Detect_Table(Ori_Sheet)
         End If
         
-        If Rev_Range = "Auto Detect" Then
+        If Rev_Range = OptionAutoDetect Then
             Rev_Range = Detect_Table(Rev_Sheet)
         End If
             
-        Ori_iRow_Start = Range(Ori_Range).Row ' Setting the row Start
-        Rev_iRow_Start = Range(Rev_Range).Row ' Setting the row Start
+        Ori_iRow_Start = Range(Ori_Range).row ' Setting the row Start
+        Rev_iRow_Start = Range(Rev_Range).row ' Setting the row Start
         oRow_Count = Range(Ori_Range).Rows.count
         rRow_Count = Range(Rev_Range).Rows.count
         
         If bMultipleSheets And bPrimaryKey = False Then ' Calculates the highest row count
-            If oRow_Count < rRow_Count Then
+            If oRow_Count > rRow_Count Then
                 rRow_Count = oRow_Count
             Else
                 oRow_Count = rRow_Count
@@ -834,28 +974,20 @@ TRY_NEXT:
             'Calculating count of rows and columns to process
             iCol_Count = Range(Ori_Range).Columns.count
             
-            'Checking column sizes are equal
-            If Range(Ori_Range).Columns.count <> Range(Rev_Range).Columns.count Then
-        
-                'Assuming the smaller between the two sheets
-                If Range(Rev_Range).Columns.count < iCol_Count Then
-                    iCol_Count = Range(Rev_Range).Columns.count
-                End If
-        
-                MsgBox "Ranges for Sheet '" & Ori_Sheet.Name & "' differ in size." & vbCr _
-                     & "Assuming the Smaller sizes" & vbCr _
-                     & "Comparing  " & iCol_Count & " column(s)"
+            'Assuming the highest between the two sheets
+            If iCol_Count < Range(Rev_Range).Columns.count Then
+                iCol_Count = Range(Rev_Range).Columns.count
             End If
         End If
     
         ' if is empty primary key is not used
         If bPrimaryKey Then
-            If Cfg_Sheet.Cells(cfgRowTableHeaders, cfgColOption).Value = "YES" Then ' table has headers
+            If Cfg_Sheet.Cells(cfgRowTableHeaders, cfgColOption).Value = OptionYes Then ' table has headers
                 oPrimaryKeyCol = FindPrimaryKey(Ori_Sheet, cfgColOriginal)
                 rPrimaryKeyCol = FindPrimaryKey(Rev_Sheet, cfgColRevision)
                 If oPrimaryKeyCol = 0 Or rPrimaryKeyCol = 0 Then
                     bPrimaryKey = False
-                    MsgBox ("Failed to find primary key. Continuing without primary key")
+                    MsgBox ThisWorkbook.Sheets(sheetLanguage).Cells(rowMessageMissingPrimKey, colLanguage).Text
                 End If
             Else
                 oPrimaryKeyCol = ColNumber(Mid(Cfg_Sheet.Cells(cfgRowPrimKeyCol, cfgColOriginal).Value, Len("Column "), 3))
@@ -1039,7 +1171,7 @@ TRY_NEXT:
                                 Else
                                     Set Rep_Sheet = Rep_Workbook.Worksheets.Add(After:=Rep_Workbook.Worksheets(Rep_Workbook.Worksheets.count), Type:=xlWorksheet)
                                 End If
-                                'Set Rep_Sheet = Workbooks.Add.Sheets("Config")
+                                'Set Rep_Sheet = Workbooks.Add.Sheets(sheetConfig)
                                 Rep_Sheet.Name = "Diff-" & Ori_Sheet.Name
                         
                                 'Rep_Sheet.Activate
@@ -1083,7 +1215,7 @@ TRY_NEXT:
                             Else
                                 For iCol1 = 0 To iCol_Count - 1
                                     If bHasHeaders Then
-                                        Rep_Sheet.Cells(iRepRow + Rep_iRow_Start, oCols(iCol1) + 2).Formula = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCols(iCol1))
+                                        Rep_Sheet.Cells(iRepRow + Rep_iRow_Start, oCols(iCol1) + 2).Value = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCols(iCol1))
                                     Else
                                         Rep_Sheet.Cells(iRepRow + Rep_iRow_Start, iCol1 + 2).Value = Ori_Sheet.Cells(oRow + Ori_iRow_Start, iCol1 + Ori_iCol_Start)
                                     End If
@@ -1230,9 +1362,9 @@ EXIT_LOOP:
     Application.ScreenUpdating = True
     
     ' Now formatting the Report Sheet
-    ThisWorkbook.Sheets("Diff").Activate
+    ThisWorkbook.Sheets(sheetDiff).Activate
     
-    Range("A2").Select
+    Range("A" & logRowHeader).Select
     Range(Selection, Selection.End(xlToRight)).Select
     Range(Selection, Selection.End(xlDown)).Select
     Selection.AutoFilter
@@ -1250,17 +1382,18 @@ EXIT_LOOP:
     End With
     With ActiveWindow
         .SplitColumn = 0
-        .SplitRow = 2
+        .SplitRow = logRowHeader
     End With
     ActiveWindow.FreezePanes = True
-    Range("G3").Select
+    Range("G" & (logRowHeader + 1)).Select
     
     Call Sheet2.InitVars
-    Call set_YES_NO(Log_Sheet.Cells(logRowOptions, logColSyncNavigation + 1), bbSyncNavigation) ' Restore Value
-    Call set_YES_NO(Log_Sheet.Cells(logRowOptions, logColUpdateSheets + 1), bbUpdateSheets) ' Restore Value
+    Call set_YES_NO(Log_Sheet.Cells(logRowSyncNavigation, logColSyncNavigation + 1), bbSyncNavigation) ' Restore Value
+    Call set_YES_NO(Log_Sheet.Cells(logRowUpdateSheets, logColUpdateSheets + 1), bbUpdateSheets) ' Restore Value
     Call ArrangeWindows
-    MsgBox "Task Completed - " & comparedSheets & " sheets compared. " & vbCr _
-            & iDiffCount & " Differences Found" & vbCr & "(c) Nuno Brum, www.nunobrum.com"
+    MsgBox FormatMessage(ThisWorkbook.Sheets(sheetLanguage).Cells(rowMessageFinished, colLanguage).Text, _
+                        comparedSheets, iDiffCount) & vbCr & "(c) Nuno Brum, www.nunobrum.com"
+    
 End Sub
 
 
@@ -1530,7 +1663,7 @@ Sub MergeText(OriText As String, RevText As String, cell As Range)
     Dim Mrg() As String
     Dim mrk() As String
     Dim msg As String
-    Dim i, j, p, l As Integer
+    Dim i, J, P, l As Integer
     Dim LO As Integer, LR As Integer
     Dim m As String
 
@@ -1555,32 +1688,32 @@ Sub MergeText(OriText As String, RevText As String, cell As Range)
                 Call MergeArrays(Ori, Rev, Mrg, mrk)
             
                 msg = ArrayToString(Mrg)
-                p = 1
+                P = 1
                 With cell
                     .Value = msg
                     For i = 0 To UBound(Mrg)
                         l = Len(Mrg(i))
                         m = mrk(i)
                         If Len(m) > 1 Then ' This a a merged word
-                            For j = 1 To l
-                                If Mid(m, j, 1) = "X" Then
-                                    .Characters(Start:=p, length:=1).Font.Strikethrough = True
+                            For J = 1 To l
+                                If Mid(m, J, 1) = "X" Then
+                                    .Characters(Start:=P, length:=1).Font.Strikethrough = True
                                 Else
-                                    If Mid(m, j, 1) = "_" Then
-                                        .Characters(Start:=p, length:=1).Font.Underline = xlUnderlineStyleSingle
+                                    If Mid(m, J, 1) = "_" Then
+                                        .Characters(Start:=P, length:=1).Font.Underline = xlUnderlineStyleSingle
                                     End If
                                 End If
-                                p = p + 1
-                            Next j
+                                P = P + 1
+                            Next J
                         Else
                             If m = "X" Then
-                                .Characters(Start:=p, length:=l).Font.Strikethrough = True
+                                .Characters(Start:=P, length:=l).Font.Strikethrough = True
                             Else
                                 If m = "_" Then
-                                    .Characters(Start:=p, length:=l).Font.Underline = xlUnderlineStyleSingle
+                                    .Characters(Start:=P, length:=l).Font.Underline = xlUnderlineStyleSingle
                                 End If
                             End If
-                            p = p + l
+                            P = P + l
                         End If
                      Next i
                 End With
@@ -1704,4 +1837,23 @@ Sub ArrangeWindows()
     'OriWorkbook.Activate
     'Application.Windows.CompareSideBySideWith (wndName)
 End Sub
+
+Sub fillLanguagesCombo()
+    Dim i As Integer
+    Dim langSheet As Worksheet
+    Dim langOptions As String
+    Dim langCell As Range
+    
+    Set langSheet = ThisWorkbook.Sheets(3)
+    Set langCell = ThisWorkbook.Sheets(1).Cells(cfgRowLanguage, cfgColLanguage)
+    langOptions = langSheet.Cells(1, 2).Text
+    i = 3
+    Do While Len(langSheet.Cells(1, i).Text) <> 0
+        langOptions = langOptions & "," & langSheet.Cells(1, i).Text
+        i = i + 1
+    Loop
+    Call SetValidation(langCell, langOptions, "Cannot be Blank", "Language of the interface", False)
+End Sub
+
+
 

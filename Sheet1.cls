@@ -33,17 +33,17 @@ Private Sub Worksheet_Change(ByVal target As Range)
 
     If target.Column = cfgColOriginal Or target.Column = cfgColRevision Then
         ' All the other columns are ignored.
-        If target.Row = cfgRowFilename Then
+        If target.row = cfgRowFilename Then
             ' This is the auxstring that was changed
             auxstring = target.Text
             'If auxstring is set by Range ignore
-            If Not Left(ThisWorkbook.Sheets("Config").Cells(cfgRowRange, target.Column).Formula, 1) = "=" Then
+            If Not Left(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, target.Column).Formula, 1) = "=" Then
             ' Set the variable that will be passed as pointer
-                Set cellRef = ThisWorkbook.Sheets("Config").Cells(cfgRowSheet, target.Column)
+                Set cellRef = ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowSheet, target.Column)
                 'Open the workbook
                 Set wWorkbook = GetWorkbookConfig(target.Column)
                 If Not wWorkbook Is Nothing Then
-                    With ThisWorkbook.Sheets("Config").Cells(cfgRowFilename, target.Column)
+                    With ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowFilename, target.Column)
                         If Not (.comment Is Nothing) Then
                             .comment.Delete
                         End If
@@ -58,11 +58,11 @@ Private Sub Worksheet_Change(ByVal target As Range)
             End If
             Exit Sub
         End If
-        If target.Row = cfgRowSheet Then
+        If target.row = cfgRowSheet Then
             ' If the sheet was set by the range ignore
-            If Not Left(ThisWorkbook.Sheets("Config").Cells(cfgRowRange, target.Column).Formula, 1) = "=" Then
-                If target.Text = "[ALL]" Then
-                    ThisWorkbook.Sheets("Config").Cells(cfgRowRange, target.Column) = "Auto Detect"
+            If Not Left(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, target.Column).Formula, 1) = "=" Then
+                If target.Text = ALLSheets Then
+                    ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, target.Column) = OptionAutoDetect
                 Else
                     ' This is the Sheet that changed
                     Set wWorkbook = GetWorkbookConfig(target.Column)
@@ -70,68 +70,68 @@ Private Sub Worksheet_Change(ByVal target As Range)
                         ' Obtain The Sheet and detect area to compare
                         Set WSheet = wWorkbook.Sheets(target.Value)
                         auxstring = Detect_Table(WSheet)
-                        ThisWorkbook.Sheets("Config").Cells(cfgRowRange, target.Column) = auxstring
+                        ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, target.Column) = auxstring
                     End If
                 End If
             End If
             Exit Sub
         End If
-        If target.Row = cfgRowRange Then
-            If Left(ThisWorkbook.Sheets("Config").Cells(cfgRowRange, target.Column).Formula, 1) = "=" Then
-                x = InStr(1, ThisWorkbook.Sheets("Config").Cells(cfgRowRange, target.Column).Formula, "!")
+        If target.row = cfgRowRange Then
+            If Left(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, target.Column).Formula, 1) = "=" Then
+                x = InStr(1, ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, target.Column).Formula, "!")
                 If x > 0 Then
-                    auxstring = Left(ThisWorkbook.Sheets("Config").Cells(cfgRowRange, target.Column).Formula, x - 1)
+                    auxstring = Left(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, target.Column).Formula, x - 1)
                     If Left(auxstring, 3) = "='[" Then
                         auxstring = Mid(auxstring, 4, Len(auxstring) - 4)
                     Else
                         If Left(auxstring, 2) = "=[" Then
                             auxstring = Mid(auxstring, 3, Len(auxstring) - 2)
                         Else
-                            ThisWorkbook.Sheets("Config").Cells(cfgRowTableHeaders, cfgColOption) = "" ' Inserted/Deleted rows
+                            ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowTableHeaders, cfgColOption) = "" ' Inserted/Deleted rows
                             Exit Sub
                         End If
                     End If
                     x1 = InStr(1, auxstring, "]")
                     If x1 > 0 Then
-                        ThisWorkbook.Sheets("Config").Cells(cfgRowSheet, target.Column) = Mid(auxstring, x1 + 1, 1000)
-                        ThisWorkbook.Sheets("Config").Cells(cfgRowFilename, target.Column) = Mid(auxstring, 1, x1 - 1)
+                        ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowSheet, target.Column) = Mid(auxstring, x1 + 1, 1000)
+                        ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowFilename, target.Column) = Mid(auxstring, 1, x1 - 1)
                     Else
-                        ThisWorkbook.Sheets("Config").Cells(cfgRowSheet, target.Column) = Mid(auxstring, 2, 1000)
+                        ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowSheet, target.Column) = Mid(auxstring, 2, 1000)
                     End If
-                    ThisWorkbook.Sheets("Config").Cells(cfgRowRange, target.Column) = Mid(ThisWorkbook.Sheets("Config").Cells(cfgRowRange, target.Column).Formula, x + 1, 1000)
+                    ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, target.Column) = Mid(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, target.Column).Formula, x + 1, 1000)
                 Else
-                    ThisWorkbook.Sheets("Config").Cells(cfgRowRange, target.Column) = Mid(ThisWorkbook.Sheets("Config").Cells(cfgRowRange, target.Column).Formula, 2, 1000)
+                    ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, target.Column) = Mid(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, target.Column).Formula, 2, 1000)
                 End If
             End If
             'Update the remaining fields
-            If target.Value = "Auto Detect" Then
-                ThisWorkbook.Sheets("Config").Cells(cfgRowTableHeaders, 2) = "NO" ' Table has headers = No
+            If target.Value = OptionAutoDetect Then
+                ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowTableHeaders, 2) = OptionNo ' Table has headers = No
             End If
             'In any case force the reload of the Column names
             Call ReloadColumnNames(target.Column)
             Exit Sub
         End If
-        If target.Row = cfgRowWhat And target.Column = cfgColOption Then ' What to compare
+        If target.row = cfgRowWhat And target.Column = cfgColOption Then ' What to compare
             If StrComp(target.Value, "Formulas", vbTextCompare) = 0 Then
-                ThisWorkbook.Sheets("Config").Cells(cfgRowAnnoMergeText, cfgColOption) = "NO"
-                Call RangeEnable(ThisWorkbook.Sheets("Config").Range("A7:B7"))
+                ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowAnnoMergeText, cfgColOption) = OptionNo
+                Call RangeEnable(ThisWorkbook.Sheets(sheetConfig).Range("A7:B7"))
             Else
-                Call RangeDisable(ThisWorkbook.Sheets("Config").Range("A7:B7"))
+                Call RangeDisable(ThisWorkbook.Sheets(sheetConfig).Range("A7:B7"))
             End If
             Exit Sub
         End If
         
-        If target.Row = cfgRowTableHeaders Then ' Table has headers
+        If target.row = cfgRowTableHeaders Then ' Table has headers
             If target.Column = cfgColOption Then
-                If StrComp(target.Value, "YES", vbTextCompare) = 0 Then
+                If StrComp(target.Value, OptionYes, vbTextCompare) = 0 Then
                     Call RangeEnable(target.Worksheet.Range("A10:C10"))
-                    If ThisWorkbook.Sheets("Config").Cells(cfgRowRange, cfgColOriginal) <> "Auto Detect" Then
+                    If ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, cfgColOriginal) <> OptionAutoDetect Then
                         auxstring = Str(DetectHeaderRow(cfgColOriginal))
-                        ThisWorkbook.Sheets("Config").Cells(cfgRowHeaderRow, cfgColOriginal) = auxstring
+                        ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowHeaderRow, cfgColOriginal) = auxstring
                     End If
-                    If ThisWorkbook.Sheets("Config").Cells(cfgRowRange, cfgColRevision) <> "Auto Detect" Then
+                    If ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, cfgColRevision) <> OptionAutoDetect Then
                         auxstring = Str(DetectHeaderRow(cfgColRevision))
-                        ThisWorkbook.Sheets("Config").Cells(cfgRowHeaderRow, cfgColRevision) = auxstring
+                        ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowHeaderRow, cfgColRevision) = auxstring
                     End If
                 Else
                     Call RangeDisable(target.Worksheet.Range("A10:C10"))
@@ -142,46 +142,50 @@ Private Sub Worksheet_Change(ByVal target As Range)
             Exit Sub
         End If
         
-        If target.Row = cfgRowHeaderRow Then
+        If target.row = cfgRowHeaderRow Then
             Call ReloadColumnNames(target.Column)
             Exit Sub
         End If
 
-        If target.Row = cfgRowAnnoMergeText And target.Column = cfgColOption Then ' Merge Text Cells
-            If StrComp(target.Value, "YES", vbTextCompare) = 0 And _
-                StrComp(ThisWorkbook.Sheets("Config").Cells(cfgRowWhat, cfgColOption), "Formulas") = 0 Then
+        If target.row = cfgRowAnnoMergeText And target.Column = cfgColOption Then ' Merge Text Cells
+            If StrComp(target.Value, OptionYes, vbTextCompare) = 0 And _
+                StrComp(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowWhat, cfgColOption), "Formulas") = 0 Then
                 MsgBox "This is not supported when comparing Formulas"
-                ThisWorkbook.Sheets("Config").Cells(cfgRowAnnoMergeText, cfgColOption) = "NO" 'Merge Text Cells = No
+                ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowAnnoMergeText, cfgColOption) = OptionNo 'Merge Text Cells = No
             End If
             Exit Sub
         End If
         
-        If target.Row = cfgRowPrimaryKey And target.Column = cfgColOption Then
-            If target.Value = "NO" Then
-                Call RangeDisable(ThisWorkbook.Sheets("Config").Range("A12:C12"))
+        If target.row = cfgRowPrimaryKey And target.Column = cfgColOption Then
+            If target.Value = OptionNo Then
+                Call RangeDisable(ThisWorkbook.Sheets(sheetConfig).Range("A12:C12"))
             Else
-                Call RangeEnable(ThisWorkbook.Sheets("Config").Range("A12:C12"))
+                Call RangeEnable(ThisWorkbook.Sheets(sheetConfig).Range("A12:C12"))
             End If
             Exit Sub
         End If
 
-        If target.Row = cfgRowAnnotate And target.Column = cfgColOption Then ' Make anotations on
-            If target.Value = "None" Then
-                Call RangeDisable(ThisWorkbook.Sheets("Config").Range("A15:A20,B15,B17:B20"))
+        If target.row = cfgRowAnnotate And target.Column = cfgColOption Then ' Make anotations on
+            If target.Value = ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionNone, colLanguage).Text Then
+                Call RangeDisable(ThisWorkbook.Sheets(sheetConfig).Range("A15:A20,B15,B17:B20"))
             Else
-                Call RangeEnable(ThisWorkbook.Sheets("Config").Range("A15:A20,B15,B17:B20"))
+                Call RangeEnable(ThisWorkbook.Sheets(sheetConfig).Range("A15:A20,B15,B17:B20"))
             End If
             Exit Sub
         End If
-        If target.Row = cfgRowReport And target.Column = cfgColOption Then ' Create Report
-            If target.Value = "YES" Then
-                RangeEnable (ThisWorkbook.Sheets("Config").Range("A23:B23"))
+        If target.row = cfgRowReport And target.Column = cfgColOption Then ' Create Report
+            If target.Value = OptionYes Then
+                RangeEnable (ThisWorkbook.Sheets(sheetConfig).Range("A23:B23"))
             Else
-                RangeDisable (ThisWorkbook.Sheets("Config").Range("A23:B23"))
+                RangeDisable (ThisWorkbook.Sheets(sheetConfig).Range("A23:B23"))
             End If
         End If
     End If
+    If target.row = cfgRowLanguage And target.Column = cfgColLanguage Then ' Language Change
+        Call ResetFields
+    End If
 End Sub
+
 
 
 

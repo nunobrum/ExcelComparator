@@ -54,26 +54,26 @@ End Sub
 
 Sub ResetSheet()
     Dim Log_Sheet As Worksheet
-    Set Log_Sheet = ThisWorkbook.Sheets("Diff")
+    Set Log_Sheet = ThisWorkbook.Sheets(sheetDiff)
     'Log_Sheet.Rows(1).RowHeight = 41
     Log_Sheet.AutoFilterMode = False
     Log_Sheet.Cells.Clear
-    Log_Sheet.Cells(logRowHeader, logColSyncOriSheet) = "Original Sheet"
+    Log_Sheet.Cells(logRowHeader, logColSyncOriSheet) = ThisWorkbook.Sheets(sheetLanguage).Cells(rowOriginalSheet, colLanguage).Text
     Log_Sheet.Cells(logRowHeader, logColSyncOriRow) = "O. Row"
     Log_Sheet.Cells(logRowHeader, logColSyncOriCol) = "O. Col"
-    Log_Sheet.Cells(logRowHeader, logColSyncRevSheet) = "Revisioned Sheet"
+    Log_Sheet.Cells(logRowHeader, logColSyncRevSheet) = ThisWorkbook.Sheets(sheetLanguage).Cells(rowRevisedSheet, colLanguage).Text
     Log_Sheet.Cells(logRowHeader, logColSyncRevRow) = "R. Row"
     Log_Sheet.Cells(logRowHeader, logColSyncRevCol) = "R. Col"
-    Log_Sheet.Cells(logRowOptions, logColSyncNavigation) = "Sync Navigation"
-    Call set_YES_NO(Log_Sheet.Cells(logRowOptions, logColSyncNavigation + 1), True)
-    Log_Sheet.Cells(logRowOptions, logColUpdateSheets) = "Update Sheets"
-    Call set_YES_NO(Log_Sheet.Cells(logRowOptions, logColUpdateSheets + 1), True)
+    Log_Sheet.Cells(logRowSyncNavigation, logColSyncNavigation) = ThisWorkbook.Sheets(sheetLanguage).Cells(rowDiffZoom, colLanguage).Text
+    Call set_YES_NO(Log_Sheet.Cells(logRowSyncNavigation, logColSyncNavigation + 1), True)
+    Log_Sheet.Cells(logRowUpdateSheets, logColUpdateSheets) = ThisWorkbook.Sheets(sheetLanguage).Cells(rowDiffUpdate, colLanguage).Text
+    Call set_YES_NO(Log_Sheet.Cells(logRowUpdateSheets, logColUpdateSheets + 1), True)
     
-    Call SetValidation(ThisWorkbook.Sheets("Diff").Cells(logRowOptions, logColUpdateSheets + 1), _
-    "YES,NO", "", "Select YES if updates in this LOG should be written back to compared sheets", False)
+    Call SetValidation(ThisWorkbook.Sheets(sheetDiff).Cells(logRowUpdateSheets, logColUpdateSheets + 1), _
+    OptionYes & "," & OptionNo, "", "", False)
 
-    Call SetValidation(ThisWorkbook.Sheets("Diff").Cells(logRowOptions, logColSyncNavigation + 1), _
-    "YES,NO", "", "Select YES if navigation in this log should be visually indicated in the compared sheets.", False)
+    Call SetValidation(ThisWorkbook.Sheets(sheetDiff).Cells(logRowSyncNavigation, logColSyncNavigation + 1), _
+    OptionYes & "," & OptionNo, "", "", False)
     
 End Sub
 
@@ -86,23 +86,23 @@ End Sub
 ' This function sets the global variables associated with the Original Sheet
 Sub SetOriCell(tr As Long)
     Dim aux As String
-    Dim Row, col As Long
+    Dim row, col As Long
     
     On Error GoTo ERROR
     
     If Ori_Workbook Is Nothing Then
         Set Ori_Workbook = GetWorkbook( _
-          ThisWorkbook.Sheets("Diff").Cells(logRowHeader, logColSyncOriValue).Value)
+          ThisWorkbook.Sheets(sheetDiff).Cells(logRowHeader, logColSyncOriValue).Value)
     End If
     
-    aux = ThisWorkbook.Sheets("Diff").Cells(tr, logColSyncOriRow)
+    aux = ThisWorkbook.Sheets(sheetDiff).Cells(tr, logColSyncOriRow)
     If IsNumeric(aux) Then
-        Row = Int(aux)
-        col = ColNumber(ThisWorkbook.Sheets("Diff").Cells(tr, logColSyncOriCol))
+        row = Int(aux)
+        col = ColNumber(ThisWorkbook.Sheets(sheetDiff).Cells(tr, logColSyncOriCol))
         If Not Ori_Workbook Is Nothing Then
-            aux = ThisWorkbook.Sheets("Diff").Cells(tr, logColSyncOriSheet)
+            aux = ThisWorkbook.Sheets(sheetDiff).Cells(tr, logColSyncOriSheet)
             Set Ori_Sheet = Ori_Workbook.Sheets(aux)
-            Set Ori_Cell = Ori_Sheet.Cells(Row, col)
+            Set Ori_Cell = Ori_Sheet.Cells(row, col)
         End If
         Exit Sub
     End If
@@ -113,22 +113,22 @@ End Sub
 ' This function sets the global variables associated with the Revision Sheet
 Sub SetRevCell(tr As Long)
     Dim aux As String
-    Dim Row, col As Long
+    Dim row, col As Long
     
     On Error GoTo ERROR
     If Rev_Workbook Is Nothing Then
         Set Rev_Workbook = GetWorkbook( _
-          ThisWorkbook.Sheets("Diff").Cells(logRowHeader, logColSyncRevValue).Value)
+          ThisWorkbook.Sheets(sheetDiff).Cells(logRowHeader, logColSyncRevValue).Value)
     End If
     
-    aux = ThisWorkbook.Sheets("Diff").Cells(tr, logColSyncRevRow)
+    aux = ThisWorkbook.Sheets(sheetDiff).Cells(tr, logColSyncRevRow)
     If IsNumeric(aux) Then
-        Row = Int(aux)
-        col = ColNumber(ThisWorkbook.Sheets("Diff").Cells(tr, logColSyncRevCol))
+        row = Int(aux)
+        col = ColNumber(ThisWorkbook.Sheets(sheetDiff).Cells(tr, logColSyncRevCol))
         If Not Rev_Workbook Is Nothing Then
-            aux = ThisWorkbook.Sheets("Diff").Cells(tr, logColSyncRevSheet)
+            aux = ThisWorkbook.Sheets(sheetDiff).Cells(tr, logColSyncRevSheet)
             Set Rev_Sheet = Rev_Workbook.Sheets(aux)
-            Set Rev_Cell = Rev_Sheet.Cells(Row, col)
+            Set Rev_Cell = Rev_Sheet.Cells(row, col)
         End If
         Exit Sub
     End If
@@ -251,18 +251,18 @@ Private Sub Worksheet_Activate()
 End Sub
 
 Private Sub Worksheet_BeforeDoubleClick(ByVal target As Range, Cancel As Boolean)
-    If target.Row <= logRowHeader Then
+    If target.row <= logRowHeader Then
         Exit Sub
     End If
     Call ReReverse ' In any case reverse any previous highlights
         
     If target.Column = logColSyncOriValue Then
-        Call SetOriCell(target.Row)
+        Call SetOriCell(target.row)
         Call BringToFrontOriCell
         Ori_Cell.Select
     Else
         If target.Column = logColSyncRevValue Then
-            Call SetRevCell(target.Row)
+            Call SetRevCell(target.row)
             Call BringToFrontRevCell
             Rev_Cell.Select
         End If
@@ -271,20 +271,21 @@ End Sub
 
 Private Sub Worksheet_Change(ByVal target As Range)
     Dim sheetname As String
-    Dim aux As String
-    Dim TRow, Row, col As Long
+    Dim aux, FormulaStr As String
+    Dim TRow, row, col As Long
     Dim sheet As Worksheet
     Dim TCell As Range
+    FormulaStr = ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionFormulas, colLanguage).Text
       
     If bAllowUpdates And _
-       ThisWorkbook.Sheets("Diff").Cells(logRowOptions, logColUpdateSheets + 1) = "YES" Then
-        If target.Row > logRowHeaders Then
+       ThisWorkbook.Sheets(sheetDiff).Cells(logRowUpdateSheets, logColUpdateSheets + 1) = OptionYes Then
+        If target.row > logRowHeaders Then
         ' Cycle through all the cells
             For Each TCell In target
                 If TCell.Column = logColSyncOriValue Then
-                    Call SetOriCell(TCell.Row)
+                    Call SetOriCell(TCell.row)
                     If Not Ori_Cell Is Nothing Then
-                        If ThisWorkbook.Sheets("Config").Cells(cfgRowWhat, cfgColOriginal) = "Formulas" Then
+                        If ThisWorkbook.Sheets("Config").Cells(cfgRowWhat, cfgColOriginal) = FormulasStr Then
                             Ori_Cell.Formula = StreamFormula(TCell.Formula)
                         Else
                             Ori_Cell = TCell
@@ -292,9 +293,9 @@ Private Sub Worksheet_Change(ByVal target As Range)
                     End If
                 End If
                 If TCell.Column = logColSyncRevValue Then
-                    Call SetRevCell(TCell.Row)
+                    Call SetRevCell(TCell.row)
                     If Not Rev_Cell Is Nothing Then
-                        If ThisWorkbook.Sheets("Config").Cells(cfgRowWhat, cfgColOriginal) = "Formulas" Then
+                        If ThisWorkbook.Sheets("Config").Cells(cfgRowWhat, cfgColOriginal) = FormulasStr Then
                             Rev_Cell = StreamFormula(TCell.Formula)
                         Else
                             Rev_Cell = TCell
@@ -309,25 +310,25 @@ End Sub
 Private Sub Worksheet_SelectionChange(ByVal target As Range)
     
     Call ReReverse ' In any case reverse any previous highlights
-    If target.Row <= logRowHeader Then
+    If target.row <= logRowHeader Then
         Exit Sub
     End If
         
-    If ThisWorkbook.Sheets("Diff").Cells(logRowOptions, logColSyncNavigation + 1) = "YES" Then
-        Call SetOriCell(target.Row)
-        Call SetRevCell(target.Row)
+    If ThisWorkbook.Sheets(sheetDiff).Cells(logRowSyncNavigation, logColSyncNavigation + 1) = OptionYes Then
+        Call SetOriCell(target.row)
+        Call SetRevCell(target.row)
             
         'If Target.Column = logColSyncOriValue Then
             Call BringToFrontOriCell
             'ThisWorkbook.Activate
-            'ThisWorkbook.Sheets("Diff").Activate
+            'ThisWorkbook.Sheets(sheetDiff).Activate
             'Target.Select
             
         'End If
         'If Target.Column = logColSyncRevValue Then
             Call BringToFrontRevCell
             ThisWorkbook.Activate
-            ThisWorkbook.Sheets("Diff").Activate
+            ThisWorkbook.Sheets(sheetDiff).Activate
             'Target.Select
             Call HighlightOriginal
             Call HighlightRevision
