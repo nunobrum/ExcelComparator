@@ -1144,56 +1144,60 @@ TRY_NEXT:
                     If bMakeAnnotation Then
                         If AnnotationSheet = 1 Then 'Original
                             If oRow <> -1 Then
-                                Set targetCell = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol + Ori_iCol_Start)
+                                Set targetCell = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol)
+                            Else
+                                Set targetCell = Nothing
                             End If
                         Else ' Revision
                             If rRow <> -1 Then
-                                Set targetCell = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol + Rev_iCol_Start)
+                                Set targetCell = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol)
+                            Else
+                                Set targetCell = Nothing
                             End If
                         End If
                         
-                    
-                        With targetCell
-                            ' Formating Cells
-                            If bApplyChangeFormat Then
-                                .Interior.Pattern = ChangedCellFormat.Interior.Pattern
-                                .Interior.PatternColorIndex = ChangedCellFormat.Interior.PatternColorIndex
-                                .Interior.Color = ChangedCellFormat.Interior.Color
-                                .Interior.TintAndShade = ChangedCellFormat.Interior.TintAndShade
-                                .Font.Color = ChangedCellFormat.Font.Color
-                                ' .Interior.ColorIndex = ChangedCellFormat.Interior.ColorIndex
-                                ' .Font = ChangedCellFormat.Font
-                                ' .Borders = ChangedCellFormat.Borders
-                            End If
-                            'Adding difference in comments. Option
-                            If bInsertComment Then
-                                If Not (.comment Is Nothing) Then
-                                    .comment.Delete
+                        If Not (targetCell Is Nothing) Then
+                            With targetCell
+                                ' Formating Cells
+                                If bApplyChangeFormat Then
+                                    .Interior.Pattern = ChangedCellFormat.Interior.Pattern
+                                    .Interior.PatternColorIndex = ChangedCellFormat.Interior.PatternColorIndex
+                                    .Interior.Color = ChangedCellFormat.Interior.Color
+                                    .Interior.TintAndShade = ChangedCellFormat.Interior.TintAndShade
+                                    .Font.Color = ChangedCellFormat.Font.Color
+                                    ' .Interior.ColorIndex = ChangedCellFormat.Interior.ColorIndex
+                                    ' .Font = ChangedCellFormat.Font
+                                    ' .Borders = ChangedCellFormat.Borders
                                 End If
-                                If Ori_Data = "" Then
-                                    comment = "Added:" + vbCr + vbLf + Rev_Data
-                                Else
-                                    If Rev_Data = "" Then
-                                        comment = "Deleted"
-                                    Else
-                                        comment = "Changed from: " + vbCr + vbLf + _
-                                               Ori_Data + vbCr + vbLf + _
-                                               "To: " + _
-                                               vbCr + vbLf + Rev_Data
+                                'Adding difference in comments. Option
+                                If bInsertComment Then
+                                    If Not (.comment Is Nothing) Then
+                                        .comment.Delete
                                     End If
+                                    If Ori_Data = "" Then
+                                        comment = "Added:" + vbCr + vbLf + Rev_Data
+                                    Else
+                                        If Rev_Data = "" Then
+                                            comment = "Deleted"
+                                        Else
+                                            comment = "Changed from: " + vbCr + vbLf + _
+                                                   Ori_Data + vbCr + vbLf + _
+                                                   "To: " + _
+                                                   vbCr + vbLf + Rev_Data
+                                        End If
+                                    End If
+                                    targetCell.AddComment comment
+                                    targetCell.comment.Visible = False
+                                    
                                 End If
-                                targetCell.AddComment comment
-                                targetCell.comment.Visible = False
-                                
+                            End With
+                            If bTextMerge And IsNumeric(targetCell.Value) = False Then
+                                    '.Value = Ori_Data + Rev_Data
+                                    '.Characters(Start:=1, Length:=Len(Ori_Data)).Font.Strikethrough = True
+                                    '.Characters(Start:=Len(Ori_Data) + 1, Length:=Len(Rev_Data)).Font.Underline = xlUnderlineStyleSingle
+                                Call MergeText(Ori_Data, Rev_Data, targetCell)
                             End If
-                        End With
-                        If bTextMerge And IsNumeric(targetCell.Value) = False Then
-                                '.Value = Ori_Data + Rev_Data
-                                '.Characters(Start:=1, Length:=Len(Ori_Data)).Font.Strikethrough = True
-                                '.Characters(Start:=Len(Ori_Data) + 1, Length:=Len(Rev_Data)).Font.Underline = xlUnderlineStyleSingle
-                            Call MergeText(Ori_Data, Rev_Data, targetCell)
                         End If
-    
                     End If
                     bRowChanged = True
                 End If

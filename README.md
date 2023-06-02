@@ -1,6 +1,12 @@
 # ExcelComparator
 VBA macros that compare difference between Excel Worksheet comparators
 
+Version 1.10a (20 May 2020)
+Fixed bug on the sheet anotation when no headers are being used.
+
+Version 1.10 (04 May 2020)
+Fixed bug on the sheet anotation where the new and deleted items were annotated on the wrong cells.
+
 Version 1.9a (02 December 2018)
 Fixes on the annotations with sheet headers are selected
 Allowing the comparison of All sheets with a primary key.
