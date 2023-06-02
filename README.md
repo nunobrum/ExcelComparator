@@ -1,6 +1,13 @@
 # ExcelComparator
 VBA macros that compare difference between Excel Worksheet comparators
 
+Version 1.7b (19 November 2017)
+Minor correction in the Sync Navigation
+
+Version 1.7a (08 October 2017)
+Double click in Diff sheet  zooms to the source Cell
+Bug Fixes
+
 Version 1.6 (24 August 2017)
 Improved Difference Browser (Log)
 Sync Navigation and Update Sheets

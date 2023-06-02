@@ -137,7 +137,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                         End If
                         If ThisWorkbook.Sheets("Config").Cells(cfgRowRange, cfgColRevision) <> "Auto Detect" Then
                             auxstring = Str(DetectHeaderRow(cfgColRevision))
-                            ThisWorkbook.Sheets("Config").Cells(, cfgColRevision) = auxstring
+                            ThisWorkbook.Sheets("Config").Cells(cfgRowHeaderRow, cfgColRevision) = auxstring
                         End If
                     End If
                 Else

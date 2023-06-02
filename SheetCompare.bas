@@ -400,8 +400,8 @@ Function FindPrimaryKey(col As Integer) As Long
         headerRow = Int(ThisWorkbook.Sheets("Config").Cells(cfgRowHeaderRow, col).Value)
         Key = ThisWorkbook.Sheets("Config").Cells(cfgRowPrimKeyCol, col).Text
         
-        For Each cell In rng
-            If cell.Row = headerRow And Not IsEmpty(cell) And cell.Text = Key Then
+        For Each cell In rng.Worksheet.Rows(headerRow).Cells()
+            If Not IsEmpty(cell) And cell.Text = Key Then
                 FindPrimaryKey = cell.Column
                 Exit Function
             End If
@@ -435,8 +435,8 @@ Sub ReloadColumnNames(col As Integer)
         headerRow = Int(ThisWorkbook.Sheets("Config").Cells(cfgRowHeaderRow, col).Value)
        
         If Not rng Is Nothing Then
-            For Each cell In rng
-                If cell.Row = headerRow And Not IsEmpty(cell) Then
+            For Each cell In rng.Worksheet.Rows(headerRow).Cells()
+                If Not IsEmpty(cell) Then
                     If firstElement Then
                         auxstring = cell.Text
                         firstElement = False
@@ -620,6 +620,7 @@ Sub Compare_Excel_Files_WorkSheets()
     Dim Ori_Range As String, Rev_Range As String
     Dim Ori_Sheet As Worksheet, Rev_Sheet As Worksheet
     Dim Cfg_Sheet As Worksheet, Rep_Sheet As Worksheet
+    
     Dim Rep_Workbook As Workbook
     
     Dim Log_Sheet As Worksheet
@@ -729,7 +730,7 @@ Sub Compare_Excel_Files_WorkSheets()
     reportedSheets = 0
     comparedSheets = 0
     iDiffCount = 0
-    Set Log_Sheet = ThisWorkbook.Sheets("Log")
+    Set Log_Sheet = ThisWorkbook.Sheets("Diff")
     bbSyncNavigation = "YES" = Log_Sheet.Cells(logRowOptions, logColSyncNavigation + 1).Value ' Backup Value
     bbUpdateSheets = "YES" = Log_Sheet.Cells(logRowOptions, logColUpdateSheets + 1).Value ' Backup Value
     ' This blocks the updates due to changes on the Report.
@@ -958,10 +959,14 @@ TRY_NEXT:
                     Rev_Data = ""
                 Else
                     If bCompareFormulas Then
-                        If bR1C1Format Then
-                            Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).FormulaR1C1Local
+                        If Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).HasFormula Then
+                            If bR1C1Format Then
+                                Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).FormulaR1C1Local
+                            Else
+                                Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).FormulaLocal
+                            End If
                         Else
-                            Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).FormulaLocal
+                            Rev_Data = ""
                         End If
                     Else
                         Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).Text
@@ -971,10 +976,14 @@ TRY_NEXT:
                     Ori_Data = ""
                 Else
                     If bCompareFormulas Then
-                        If bR1C1Format Then
-                            Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).FormulaR1C1Local
+                        If Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).HasFormula Then
+                            If bR1C1Format Then
+                                Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).FormulaR1C1Local
+                            Else
+                                Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).FormulaLocal
+                            End If
                         Else
-                            Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).FormulaLocal
+                            Ori_Data = ""
                         End If
                     Else
                         Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).Text
@@ -1175,7 +1184,7 @@ TRY_NEXT:
     
             ' Informing the user
             If (oRow Mod 30) = 0 Then
-                Application.StatusBar = "Progress (" & Ori_SheetName & ")..." & Format(oRow / oRow_Count * 100, "##0.0")
+                Application.StatusBar = "Progress (sheet:" & Ori_SheetName & " row:" & oRow & ")"
             End If
             
             oRow = oRow + 1
@@ -1193,7 +1202,7 @@ EXIT_LOOP:
     Application.ScreenUpdating = True
     
     ' Now formatting the Report Sheet
-    ThisWorkbook.Sheets("Log").Activate
+    ThisWorkbook.Sheets("Diff").Activate
     
     Range("A2").Select
     Range(Selection, Selection.End(xlToRight)).Select
@@ -1217,9 +1226,11 @@ EXIT_LOOP:
     End With
     ActiveWindow.FreezePanes = True
     Range("G3").Select
-
-    Sheet2.InitVars
-
+    
+    Call Sheet2.InitVars
+    Call set_YES_NO(Log_Sheet.Cells(logRowOptions, logColSyncNavigation + 1), bbSyncNavigation) ' Restore Value
+    Call set_YES_NO(Log_Sheet.Cells(logRowOptions, logColUpdateSheets + 1), bbUpdateSheets) ' Restore Value
+    Call ArrangeWindows
     MsgBox "Task Completed - " & comparedSheets & " sheets compared. " & vbCr _
             & iDiffCount & " Differences Found" & vbCr & "(c) Nuno Brum, www.nunobrum.com"
 End Sub
@@ -1631,6 +1642,25 @@ Function UnicodeToArray(inString As String) As String()
 
 End Function
 
+Function StreamFormula(inString As String) As String
+    Dim outString As String
+    Dim i As Integer
+    If Left(inString, 1) = "=" Then
+        For Each ch In inString
+            If ch = """" Then
+                outString = outString & "," ' Replaces ; by ,
+            Else
+                If ch = """" Then
+                    outString = outString & ch ' Doubles the "
+                End If
+                outString = outString & ch
+            End If
+        Next ch
+        StreamFormula = outString
+    Else
+        StreamFormula = inString ' Don't do anything
+    End If
+End Function
 Sub ArrangeWindows()
     'Dim OriWorkbook As Workbook
     'Dim RevWorkbook As Workbook
