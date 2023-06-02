@@ -1,6 +1,10 @@
 # ExcelComparator
 VBA macros that compare difference between Excel Worksheet comparators
 
+Version 2.1 (13 June 2020)
+Changing Layout of the Difference Sheet
+Minor bug fixes
+
 Version 2.0 (23 May 2020)
 Multilingual Support (English, Français, Português, Español, русский, and Chinese)
 

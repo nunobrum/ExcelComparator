@@ -8,7 +8,6 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 
-
 Sub RangeEnable(rng As Range)
     With rng.Font
         .ColorIndex = xlAutomatic
@@ -185,8 +184,4 @@ Private Sub Worksheet_Change(ByVal target As Range)
         Call ResetFields
     End If
 End Sub
-
-
-
-
 

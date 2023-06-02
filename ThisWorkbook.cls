@@ -12,7 +12,7 @@ Private Sub Workbook_Deactivate()
 End Sub
 
 Private Sub Workbook_Open()
-    Sheet1.Cells(1, 4) = "Sheet Comparator 2v0" & vbCr & vbLf & _
+    Sheet1.Cells(1, 4) = "Sheet Comparator 2v1" & vbCr & vbLf & _
     "Running on Excel Version " & Application.Version & vbCr & vbLf & _
     Application.OperatingSystem
     Sheet2.InitVars

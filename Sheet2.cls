@@ -8,7 +8,6 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 
-
 Dim Ori_Workbook As Workbook
 Dim Rev_Workbook As Workbook
 
@@ -387,8 +386,5 @@ Sub BringToFrontRevCell()
         'Rev_Workbook.Windows(1).ScrollColumn = Rev_Cell.Column
     End If
 End Sub
-
-
-
 
 

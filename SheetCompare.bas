@@ -33,9 +33,9 @@ Public Const cfgColLanguage = 2
 
 ' Log sheet Constants
 Public Const logRowSyncNavigation = 1
-Public Const logColSyncNavigation = 8
+Public Const logColSyncNavigation = 7
 Public Const logRowUpdateSheets = 2
-Public Const logColUpdateSheets = 8
+Public Const logColUpdateSheets = 7
 
 Public Const logRowHeader = 3
 
@@ -1854,6 +1854,4 @@ Sub fillLanguagesCombo()
     Loop
     Call SetValidation(langCell, langOptions, "Cannot be Blank", "Language of the interface", False)
 End Sub
-
-
 
