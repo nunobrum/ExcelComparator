@@ -78,9 +78,10 @@ Public Const rowMessageProgress = 19
 Public Const rowForConfigA2 = 20
 Public Const rowOptionValues = 30
 Public Const rowOptionFormulas = 31
-Public Const rowOptionNone = 48
-Public Const rowOptionOriginal = 49
-Public Const rowOptionRevision = 50
+Public Const rowOptionText = 32
+Public Const rowOptionNone = 49
+Public Const rowOptionOriginal = 50
+Public Const rowOptionRevision = 51
 
 ' usual language definitions
 Public OptionYes, OptionNo, OptionAutoDetect, ALLSheets As String
@@ -799,7 +800,8 @@ Sub Compare_Excel_Files_WorkSheets()
     Dim ChangedCellFormat, ChangedRowFormat As Range
     Dim targetCell As Range
     Dim bTextMerge, bReportMerge As Boolean
-    Dim bCompareFormulas As Boolean, bR1C1Format As Boolean, bHasHeaders As Boolean
+    Dim bCompareFormulas As Boolean, bR1C1Format As Boolean, bCompareText As Boolean
+    Dim bHasHeaders As Boolean
     Dim comment As String
     Dim rangeReference As String
 
@@ -846,12 +848,15 @@ Sub Compare_Excel_Files_WorkSheets()
      
     'Comparing Values of Formulas
     ' This is done here so thata the bTextMerge can be direcly overriden
-    If StrComp(Cfg_Sheet.Cells(cfgRowWhat, cfgColOption).Value, "Formulas", vbTextCompare) = 0 Then  ' What to compare
+    If StrComp(Cfg_Sheet.Cells(cfgRowWhat, cfgColOption).Value, _
+               ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionFormulas, colLanguage).Text, vbTextCompare) = 0 Then  ' What to compare
         bCompareFormulas = True
         bR1C1Format = (StrComp(Cfg_Sheet.Cells(cfgRowR1C1, cfgColOption), OptionYes, vbTextCompare) = 0)  ' Use R1C1 Format
         bTextMerge = False
     Else
         bCompareFormulas = False
+        bCompareText = StrComp(Cfg_Sheet.Cells(cfgRowWhat, cfgColOption).Value, _
+                               ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionText, colLanguage).Text, vbTextCompare) = 0
     End If
      
     bDoReport = (StrComp(Cfg_Sheet.Cells(cfgRowReport, cfgColOption), OptionYes, vbTextCompare) = 0) ' Create Report
@@ -1105,10 +1110,14 @@ TRY_NEXT:
                                 Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).FormulaLocal
                             End If
                         Else
-                            Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).Text
+                            Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).Value
                         End If
                     Else
-                        Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).Text
+                        If bCompareText Then
+                            Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).Text
+                        Else
+                           Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).Value
+                        End If
                     End If
                 End If
                 If oRow >= oRow_Count Then
@@ -1122,10 +1131,14 @@ TRY_NEXT:
                                 Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).FormulaLocal
                             End If
                         Else
-                            Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).Text
+                            Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).Value
                         End If
                     Else
-                        Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).Text
+                        If bCompareText Then
+                            Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).Text
+                        Else
+                            Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).Value
+                        End If
                     End If
                 End If
                 'Compare Data From Excel Sheets & Highlight the Mismatches
@@ -1261,9 +1274,9 @@ TRY_NEXT:
                             Else
                                 For iCol1 = 0 To iCol_Count - 1
                                     If bHasHeaders Then
-                                        Rep_Sheet.Cells(iRepRow + Rep_iRow_Start, oCols(iCol1) + 2).Value = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCols(iCol1))
+                                        Rep_Sheet.Cells(iRepRow + Rep_iRow_Start, oCols(iCol1) + 2).Value = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCols(iCol1)).Value
                                     Else
-                                        Rep_Sheet.Cells(iRepRow + Rep_iRow_Start, iCol1 + 2).Value = Ori_Sheet.Cells(oRow + Ori_iRow_Start, iCol1 + Ori_iCol_Start)
+                                        Rep_Sheet.Cells(iRepRow + Rep_iRow_Start, iCol1 + 2).Value = Ori_Sheet.Cells(oRow + Ori_iRow_Start, iCol1 + Ori_iCol_Start).Value
                                     End If
                                 Next iCol1
                             End If
