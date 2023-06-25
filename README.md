@@ -1,6 +1,10 @@
 # ExcelComparator
 VBA macros that compare difference between Excel Worksheet comparators
 
+Version 2.5 (25 June 2023)
+Possibility of chosing from Values, Formulas or Text Comparisson.
+Fixing problem where comparing formulas was only working in English language.
+
 Version 2.4 (05 January 2023)
 Solving problem with sheet protections on Mac OSX
 
