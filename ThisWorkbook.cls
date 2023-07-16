@@ -13,11 +13,11 @@ End Sub
 
 Private Sub Workbook_Open()
     Dim hyperlink As Variant
-    Sheet1.Cells(1, 4) = "Sheet Comparator 2v5" & vbCr & vbLf & _
+    Sheet1.Cells(1, 4) = "Sheet Comparator 2v6" & vbCr & vbLf & _
     "Running on Excel Version " & Application.Version & vbCr & vbLf & _
     Application.OperatingSystem
     Sheet1.Hyperlinks.Add _
-                Anchor:=Sheet1.Range("D28"), _
+                Anchor:=Sheet1.Range("D27"), _
                 Address:="https://www.paypal.com/paypalme/send2NunoBrum", _
                 ScreenTip:="Donations will serve to fund the development of more tools and additional features." & _
                 "The remainer will be sent to help Ukranian refugees", _
@@ -27,13 +27,13 @@ Private Sub Workbook_Open()
     Sheet1.Range("D28").Font.Bold = True
          
     Sheet1.Hyperlinks.Add _
-                Anchor:=Sheet1.Range("D29"), _
+                Anchor:=Sheet1.Range("D28"), _
                 Address:="mailto:me@nunobrum.com", _
                 TextToDisplay:="Suggestions, Contact me at: me@nunobrum.com"
     Sheet1.Range("D29").Font.Color = RGB(255, 217, 102)
     
     Sheet1.Hyperlinks.Add _
-            Anchor:=Sheet1.Range("D30"), _
+            Anchor:=Sheet1.Range("D29"), _
             Address:="http://www.nunobrum.com/excelcomparator.html", _
             TextToDisplay:="© Nuno Brum 2020, http://www.nunobrum.com/excelcomparator.html"
     

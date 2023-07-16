@@ -1,6 +1,10 @@
 # ExcelComparator
 VBA macros that compare difference between Excel Worksheet comparators
 
+Version 2.6 (16 July 2023)
+Merging the compare Formulas with R1C1 format into the same configuration list
+When comparing worksheets with errors, the compare will not be stopped.
+
 Version 2.5 (25 June 2023)
 Possibility of chosing from Values, Formulas or Text Comparisson.
 Fixing problem where comparing formulas was only working in English language.
