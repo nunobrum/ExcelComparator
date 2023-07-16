@@ -2,7 +2,7 @@
 VBA macros that compare difference between Excel Worksheet comparators
 
 Version 2.6 (16 July 2023)
-Merging the compare Formulas with R1C1 format into the same configuration list
+Merging the compare Formulas with R1C1 format into the same configuration list.
 When comparing worksheets with errors, the compare will not be stopped.
 
 Version 2.5 (25 June 2023)
@@ -13,9 +13,9 @@ Version 2.4 (05 January 2023)
 Solving problem with sheet protections on Mac OSX
 
 Version 2.3 (26 July 2022)
-Corrections on the text merge functionality
-Marking modified rows by color instead of reserving a column
-Small improvements on configuration sheet
+Corrections on the text merge functionality.
+Marking modified rows by color instead of reserving a column.
+Small improvements on configuration sheet.
 
 Version 2.2 (09 August 2020)
 Paypal Link update
