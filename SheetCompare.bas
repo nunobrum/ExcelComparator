@@ -83,6 +83,11 @@ Public Const rowOptionNone = 49
 Public Const rowOptionOriginal = 50
 Public Const rowOptionRevision = 51
 
+Public Const compareMethodValue = 0
+Public Const compareMethodText = 1
+Public Const compareMethodFormula = 2
+Public Const compareMethodFormulaR1C1 = 3
+
 ' usual language definitions
 Public OptionYes, OptionNo, OptionAutoDetect, ALLSheets As String
 Public colLanguage As Integer
@@ -749,6 +754,30 @@ Function ColumnMatch(OriSheet As Worksheet, OriRange As String, RevSheet As Work
     ColumnMatch = count
 End Function
 
+Function GetCellValueSafe(cell As Range, method As Integer) As String
+    On Error GoTo BadFormula
+        Select Case method
+            Case compareMethodValue
+                GetCellValueSafe = cell.Value
+            Case compareMethodText
+                GetCellValueSafe = cell.Text
+            Case compareMethodFormula
+                If cell.HasFormula() Then
+                    GetCellValueSafe = cell.Formula
+                Else
+                    GetCellValueSafe = cell.Value
+                End If
+            Case compareMethodFormulaR1C1
+                If cell.HasFormula Then
+                    GetCellValueSafe = cell.FormulaR1C1
+                Else
+                    GetCellValueSafe = cell.Value
+                End If
+        End Select
+    Exit Function
+BadFormula:
+      GetCellValueSafe = "#REF!"
+End Function
 
 
 'For More Free Code & Ideas Visit http://OfficeTricks.com
@@ -800,7 +829,8 @@ Sub Compare_Excel_Files_WorkSheets()
     Dim ChangedCellFormat, ChangedRowFormat As Range
     Dim targetCell As Range
     Dim bTextMerge, bReportMerge As Boolean
-    Dim bCompareFormulas As Boolean, bR1C1Format As Boolean, bCompareText As Boolean
+    Dim bCompareFormulas As Boolean  ' If the comparison is taking formulas
+    Dim iCompareMethod As Integer    ' What to Compare, Options are defined in const : Values, Text, Formula and FormulaR1C1
     Dim bHasHeaders As Boolean
     Dim comment As String
     Dim rangeReference As String
@@ -851,12 +881,21 @@ Sub Compare_Excel_Files_WorkSheets()
     If StrComp(Cfg_Sheet.Cells(cfgRowWhat, cfgColOption).Value, _
                ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionFormulas, colLanguage).Text, vbTextCompare) = 0 Then  ' What to compare
         bCompareFormulas = True
-        bR1C1Format = (StrComp(Cfg_Sheet.Cells(cfgRowR1C1, cfgColOption), OptionYes, vbTextCompare) = 0)  ' Use R1C1 Format
         bTextMerge = False
+        If (StrComp(Cfg_Sheet.Cells(cfgRowR1C1, cfgColOption), OptionYes, vbTextCompare) = 0) Then ' Use R1C1 Format
+            iCompareMethod = compareMethodFormulaR1C1
+        Else
+            iCompareMethod = compareMethodFormula
+        End If
+        
     Else
         bCompareFormulas = False
-        bCompareText = StrComp(Cfg_Sheet.Cells(cfgRowWhat, cfgColOption).Value, _
-                               ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionText, colLanguage).Text, vbTextCompare) = 0
+        If StrComp(Cfg_Sheet.Cells(cfgRowWhat, cfgColOption).Value, _
+                               ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionText, colLanguage).Text, vbTextCompare) = 0 Then
+            iCompareMethod = compareMethodText
+        Else
+            iCompareMethod = compareMethodValue
+        End If
     End If
      
     bDoReport = (StrComp(Cfg_Sheet.Cells(cfgRowReport, cfgColOption), OptionYes, vbTextCompare) = 0) ' Create Report
@@ -1102,44 +1141,12 @@ TRY_NEXT:
                 If rRow = -1 Then
                     Rev_Data = ""
                 Else
-                    If bCompareFormulas Then
-                        If Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).HasFormula Then
-                            If bR1C1Format Then
-                                Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).FormulaR1C1Local
-                            Else
-                                Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).FormulaLocal
-                            End If
-                        Else
-                            Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).Value
-                        End If
-                    Else
-                        If bCompareText Then
-                            Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).Text
-                        Else
-                           Rev_Data = Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol).Value
-                        End If
-                    End If
+                    Rev_Data = GetCellValueSafe(Rev_Sheet.Cells(rRow + Rev_iRow_Start, rCol), iCompareMethod)
                 End If
                 If oRow >= oRow_Count Then
                     Ori_Data = ""
                 Else
-                    If bCompareFormulas Then
-                        If Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).HasFormula Then
-                            If bR1C1Format Then
-                                Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).FormulaR1C1Local
-                            Else
-                                Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).FormulaLocal
-                            End If
-                        Else
-                            Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).Value
-                        End If
-                    Else
-                        If bCompareText Then
-                            Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).Text
-                        Else
-                            Ori_Data = Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol).Value
-                        End If
-                    End If
+                    Ori_Data = GetCellValueSafe(Ori_Sheet.Cells(oRow + Ori_iRow_Start, oCol), iCompareMethod)
                 End If
                 'Compare Data From Excel Sheets & Highlight the Mismatches
                 If Ori_Data <> Rev_Data Then
