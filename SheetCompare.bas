@@ -14,22 +14,21 @@ Public Const cfgRowFilename As Long = 2
 Public Const cfgRowSheet As Long = 3
 Public Const cfgRowRange As Long = 4
 Public Const cfgRowWhat As Long = 6
-Public Const cfgRowR1C1 As Long = 7
-Public Const cfgRowTableHeaders As Long = 9
-Public Const cfgRowHeaderRow As Long = 10
-Public Const cfgRowPrimaryKey As Long = 11
-Public Const cfgRowPrimKeyCol As Long = 12
-Public Const cfgRowAnnotate As Long = 14
-Public Const cfgRowAnnoUseFormat As Long = 15
-Public Const cfgRowAnnoCellFormat As Long = 16
-Public Const cfgRowAnnoComments As Long = 17
-Public Const cfgRowAnnoMergeText As Long = 18
-Public Const cfgRowAnnoUseRowFormat As Long = 19
-Public Const cfgRowAnnoRowFormat As Long = 20
-Public Const cfgRowReport As Long = 22
-Public Const cfgRowRepWithMerge As Long = 23
+Public Const cfgRowTableHeaders As Long = 8
+Public Const cfgRowHeaderRow As Long = 9
+Public Const cfgRowPrimaryKey As Long = 10
+Public Const cfgRowPrimKeyCol As Long = 11
+Public Const cfgRowAnnotate As Long = 13
+Public Const cfgRowAnnoUseFormat As Long = 14
+Public Const cfgRowAnnoCellFormat As Long = 15
+Public Const cfgRowAnnoComments As Long = 16
+Public Const cfgRowAnnoMergeText As Long = 17
+Public Const cfgRowAnnoUseRowFormat As Long = 18
+Public Const cfgRowAnnoRowFormat As Long = 19
+Public Const cfgRowReport As Long = 21
+Public Const cfgRowRepWithMerge As Long = 22
 
-Public Const cfgRowLanguage As Long = 28
+Public Const cfgRowLanguage As Long = 27
 Public Const cfgColLanguage = 2
 
 ' Log sheet Constants
@@ -77,11 +76,13 @@ Public Const rowMessageFinished = 18
 Public Const rowMessageProgress = 19
 Public Const rowForConfigA2 = 20
 Public Const rowOptionValues = 30
-Public Const rowOptionFormulas = 31
-Public Const rowOptionText = 32
-Public Const rowOptionNone = 49
-Public Const rowOptionOriginal = 50
-Public Const rowOptionRevision = 51
+Public Const rowOptionText = 31
+Public Const rowOptionFormulas = 32
+Public Const rowOptionFormulasR1C1 = 33
+
+Public Const rowOptionNone = 47
+Public Const rowOptionOriginal = 48
+Public Const rowOptionRevision = 49
 
 Public Const compareMethodValue = 0
 Public Const compareMethodText = 1
@@ -267,7 +268,7 @@ Sub ResetFields()
         .Cells(cfgRowRange, cfgColRevision) = OptionAutoDetect
         
         .Cells(cfgRowWhat, cfgColOption) = langSheet.Cells(rowOptionValues, colLanguage)
-        .Cells(cfgRowR1C1, cfgColOption) = OptionNo
+
         .Cells(cfgRowTableHeaders, cfgColOption) = OptionNo
         .Cells(cfgRowHeaderRow, cfgColOriginal) = "1"
         .Cells(cfgRowHeaderRow, cfgColRevision) = "1"
@@ -880,24 +881,26 @@ Sub Compare_Excel_Files_WorkSheets()
     ' This is done here so thata the bTextMerge can be direcly overriden
     If StrComp(Cfg_Sheet.Cells(cfgRowWhat, cfgColOption).Value, _
                ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionFormulas, colLanguage).Text, vbTextCompare) = 0 Then  ' What to compare
+        iCompareMethod = compareMethodFormula
         bCompareFormulas = True
         bTextMerge = False
-        If (StrComp(Cfg_Sheet.Cells(cfgRowR1C1, cfgColOption), OptionYes, vbTextCompare) = 0) Then ' Use R1C1 Format
-            iCompareMethod = compareMethodFormulaR1C1
-        Else
-            iCompareMethod = compareMethodFormula
-        End If
-        
     Else
-        bCompareFormulas = False
         If StrComp(Cfg_Sheet.Cells(cfgRowWhat, cfgColOption).Value, _
-                               ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionText, colLanguage).Text, vbTextCompare) = 0 Then
-            iCompareMethod = compareMethodText
+                   ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionFormulasR1C1, colLanguage).Text, vbTextCompare) = 0 Then  ' What to compare
+            iCompareMethod = compareMethodFormulaR1C1
+            bCompareFormulas = True
+            bTextMerge = False
+            
         Else
-            iCompareMethod = compareMethodValue
+            bCompareFormulas = False
+            If StrComp(Cfg_Sheet.Cells(cfgRowWhat, cfgColOption).Value, _
+                                   ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionText, colLanguage).Text, vbTextCompare) = 0 Then
+                iCompareMethod = compareMethodText
+            Else
+                iCompareMethod = compareMethodValue
+            End If
         End If
     End If
-     
     bDoReport = (StrComp(Cfg_Sheet.Cells(cfgRowReport, cfgColOption), OptionYes, vbTextCompare) = 0) ' Create Report
     If bDoReport Then
         bReportMerge = (StrComp(Cfg_Sheet.Cells(cfgRowRepWithMerge, cfgColOption), OptionYes, vbTextCompare) = 0)  ' Use merge in the Report
