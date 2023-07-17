@@ -110,20 +110,11 @@ Private Sub Worksheet_Change(ByVal target As Range)
             Call ReloadColumnNames(target.Column)
             Exit Sub
         End If
-        If target.row = cfgRowWhat And target.Column = cfgColOption Then ' What to compare
-            If StrComp(target.Value, "Formulas", vbTextCompare) = 0 Then
-                ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowAnnoMergeText, cfgColOption) = OptionNo
-                Call RangeEnable(ThisWorkbook.Sheets(sheetConfig).Range("A7:B7"))
-            Else
-                Call RangeDisable(ThisWorkbook.Sheets(sheetConfig).Range("A7:B7"))
-            End If
-            Exit Sub
-        End If
         
         If target.row = cfgRowTableHeaders Then ' Table has headers
             If target.Column = cfgColOption Then
                 If StrComp(target.Value, OptionYes, vbTextCompare) = 0 Then
-                    Call RangeEnable(target.Worksheet.Range("A10:C10"))
+                    Call RangeEnable(target.Worksheet.Range("A9:C9"))
                     If ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowRange, cfgColOriginal) <> OptionAutoDetect Then
                         auxstring = Str(DetectHeaderRow(cfgColOriginal))
                         ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowHeaderRow, cfgColOriginal) = auxstring
@@ -133,7 +124,7 @@ Private Sub Worksheet_Change(ByVal target As Range)
                         ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowHeaderRow, cfgColRevision) = auxstring
                     End If
                 Else
-                    Call RangeDisable(target.Worksheet.Range("A10:C10"))
+                    Call RangeDisable(target.Worksheet.Range("A9:C9"))
                 End If
                 Call ReloadColumnNames(cfgColOriginal)
                 Call ReloadColumnNames(cfgColRevision)
@@ -157,18 +148,18 @@ Private Sub Worksheet_Change(ByVal target As Range)
         
         If target.row = cfgRowPrimaryKey And target.Column = cfgColOption Then
             If target.Value = OptionNo Then
-                Call RangeDisable(ThisWorkbook.Sheets(sheetConfig).Range("A12:C12"))
+                Call RangeDisable(ThisWorkbook.Sheets(sheetConfig).Range("A11:C11"))
             Else
-                Call RangeEnable(ThisWorkbook.Sheets(sheetConfig).Range("A12:C12"))
+                Call RangeEnable(ThisWorkbook.Sheets(sheetConfig).Range("A11:C11"))
             End If
             Exit Sub
         End If
 
         If target.row = cfgRowAnnotate And target.Column = cfgColOption Then ' Make anotations on
             If target.Value = ThisWorkbook.Sheets(sheetLanguage).Cells(rowOptionNone, colLanguage).Text Then
-                Call RangeDisable(ThisWorkbook.Sheets(sheetConfig).Range("A15:A20,B15,B17:B19"))
+                Call RangeDisable(ThisWorkbook.Sheets(sheetConfig).Range("A14:A19,B14,B16:B18"))
             Else
-                Call RangeEnable(ThisWorkbook.Sheets(sheetConfig).Range("A15,A17:A19,B15,B17:B19"))
+                Call RangeEnable(ThisWorkbook.Sheets(sheetConfig).Range("A14,A16:A18,B15,B16:B18"))
                 Call Worksheet_Change(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowAnnoUseFormat, cfgColOption))
                 Call Worksheet_Change(ThisWorkbook.Sheets(sheetConfig).Cells(cfgRowAnnoUseRowFormat, cfgColOption))
             End If
@@ -197,9 +188,9 @@ Private Sub Worksheet_Change(ByVal target As Range)
         End If
         If target.row = cfgRowReport And target.Column = cfgColOption Then ' Create Report
             If target.Value = OptionYes Then
-                RangeEnable (ThisWorkbook.Sheets(sheetConfig).Range("A23:B23"))
+                RangeEnable (ThisWorkbook.Sheets(sheetConfig).Range("A22:B22"))
             Else
-                RangeDisable (ThisWorkbook.Sheets(sheetConfig).Range("A23:B23"))
+                RangeDisable (ThisWorkbook.Sheets(sheetConfig).Range("A22:B22"))
             End If
         End If
     End If
