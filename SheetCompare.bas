@@ -755,15 +755,17 @@ Function ColumnMatch(OriSheet As Worksheet, OriRange As String, RevSheet As Work
     ColumnMatch = count
 End Function
 
+
 Function GetCellValueSafe(cell As Range, method As Integer) As String
     Dim errval As Variant
+    Dim dummy As String
     On Error GoTo BadFormula
         Select Case method
             Case compareMethodValue
                 GetCellValueSafe = cell.Value
             Case compareMethodText
                 ' Comment the line below to have errors being shown as the user will see them
-                errval = cell.Value 'Dummy read to check for errors
+                dummy = cell.Value 'Dummy read to check for errors
                 GetCellValueSafe = cell.Text
             Case compareMethodFormula
                 If cell.HasFormula Then
@@ -800,7 +802,6 @@ BadFormula:
             MsgBox "Unkown Error Code. This should never happen!!"
     End Select
 End Function
-
 
 'For More Free Code & Ideas Visit http://OfficeTricks.com
 Sub Compare_Excel_Files_WorkSheets()

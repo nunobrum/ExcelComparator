@@ -13,7 +13,7 @@ End Sub
 
 Private Sub Workbook_Open()
     Dim hyperlink As Variant
-    Sheet1.Cells(1, 4) = "Sheet Comparator 2v6" & vbCr & vbLf & _
+    Sheet1.Cells(1, 4) = "Sheet Comparator 2v7" & vbCr & vbLf & _
     "Running on Excel Version " & Application.Version & vbCr & vbLf & _
     Application.OperatingSystem
     Sheet1.Hyperlinks.Add _
