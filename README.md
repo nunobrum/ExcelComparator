@@ -1,6 +1,10 @@
 # ExcelComparator
 VBA macros that compare difference between Excel Worksheet comparators
 
+Version 2.7 (14 September 2023)
+Handling different errors with their respective error codes.
+Adding a dummy read to .Value before reading .Text so that errors won't be formatted by the user view settings.
+
 Version 2.6 (16 July 2023)
 Merging the compare Formulas with R1C1 format into the same configuration list.
 When comparing worksheets with errors, the compare will not be stopped.
