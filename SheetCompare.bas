@@ -756,14 +756,17 @@ Function ColumnMatch(OriSheet As Worksheet, OriRange As String, RevSheet As Work
 End Function
 
 Function GetCellValueSafe(cell As Range, method As Integer) As String
+    Dim errval As Variant
     On Error GoTo BadFormula
         Select Case method
             Case compareMethodValue
                 GetCellValueSafe = cell.Value
             Case compareMethodText
+                ' Comment the line below to have errors being shown as the user will see them
+                errval = cell.Value 'Dummy read to check for errors
                 GetCellValueSafe = cell.Text
             Case compareMethodFormula
-                If cell.HasFormula() Then
+                If cell.HasFormula Then
                     GetCellValueSafe = cell.Formula
                 Else
                     GetCellValueSafe = cell.Value
@@ -777,7 +780,25 @@ Function GetCellValueSafe(cell As Range, method As Integer) As String
         End Select
     Exit Function
 BadFormula:
-      GetCellValueSafe = "#REF!"
+    errval = cell.Value
+    Select Case errval
+        Case CVErr(xlErrDiv0)
+            GetCellValueSafe = "#DIV/0!"
+        Case CVErr(xlErrNA)
+            GetCellValueSafe = "#N/A"
+        Case CVErr(xlErrName)
+            GetCellValueSafe = "#NAME?"
+        Case CVErr(xlErrNull)
+            GetCellValueSafe = "#NULL!"
+        Case CVErr(xlErrNum)
+            GetCellValueSafe = "#NUM!"
+        Case CVErr(xlErrRef)
+            GetCellValueSafe = "#REF!"
+        Case CVErr(xlErrValue)
+            GetCellValueSafe = "#VALUE!"
+        Case Else
+            MsgBox "Unkown Error Code. This should never happen!!"
+    End Select
 End Function
 
 
