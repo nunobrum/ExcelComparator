@@ -843,7 +843,7 @@ Sub Compare_Excel_Files_WorkSheets()
     Dim tempWidth As Integer
     
     Dim iRepCount As Integer, iRepRow As Integer
-    Dim bDoReport As Boolean, bFirstDifference As Boolean, bRowChanged As Boolean
+    Dim bDoReport As Boolean, bFirstDifference As Boolean, bRowChanged As Boolean, bReportNewLine As Boolean
     Dim bMakeAnnotation As Boolean, bPrimaryKey As Boolean
     Dim oPrimaryKeyCol, rPrimaryKeyCol As Long
 
@@ -1152,6 +1152,7 @@ TRY_NEXT:
             End If
             
             bRowChanged = False
+            bReportNewLine = False
 
             For iCol = 0 To iCol_Count - 1
                 
@@ -1250,8 +1251,9 @@ TRY_NEXT:
                     'Report the difference
                     If bDoReport Then
                         'If it is the first difference there is some stuff to do
-                        If bRowChanged = False Then
+                        If bReportNewLine = False Then
                             'create the report if needed
+                            bReportNewLine = True
                             If bFirstDifference Then
                                 reportedSheets = reportedSheets + 1
                                 If Rep_Workbook Is Nothing Then
@@ -1318,9 +1320,9 @@ TRY_NEXT:
                             With Rep_Sheet.Cells(iRepRow + Rep_iRow_Start, oCols(iCol) + 2)
                                 .Interior.Pattern = ChangedCellFormat.Interior.Pattern
                                 .Interior.PatternColorIndex = ChangedCellFormat.Interior.PatternColorIndex
-                                .Interior.ThemeColor = ChangedCellFormat.Interior.ThemeColor
+                                .Interior.Color = ChangedCellFormat.Interior.Color
                                 .Interior.TintAndShade = ChangedCellFormat.Interior.TintAndShade
-                                .Interior.PatternTintAndShade = ChangedCellFormat.Interior.PatternTintAndShade
+                                .Font.Color = ChangedCellFormat.Font.Color
                             End With
                         Else
                             With Rep_Sheet.Cells(iRepRow + Rep_iRow_Start, iCol + 2)
@@ -1977,4 +1979,3 @@ Sub fillLanguagesCombo()
     Loop
     Call SetValidation(langCell, langOptions, "Cannot be Blank", "Language of the interface", False)
 End Sub
-
